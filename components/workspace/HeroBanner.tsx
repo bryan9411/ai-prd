@@ -11,7 +11,6 @@ export const HeroBanner = ({ projectName }: HeroBannerProps) => {
 			px-6 py-5'
 		>
 			<div className='flex items-start justify-between gap-4 flex-wrap'>
-				{/* 標題區 */}
 				<div>
 					<div className='flex items-center gap-2 mb-1'>
 						<h1 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight'>

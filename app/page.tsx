@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from './components/Sidebar'
-import { Topbar } from './components/Topbar'
-import { HeroBanner } from './components/HeroBanner'
-import { IdeaInput } from './components/IdeaInput'
-import { TabPanel } from './components/TabPanel'
-import { RightPanel } from './components/RightPanel'
+import { Sidebar } from '@/components/layout/Sidebar'
+import { Topbar } from '@/components/layout/Topbar'
+import { HeroBanner } from '@/components/workspace/HeroBanner'
+import { IdeaInput } from '@/components/workspace/IdeaInput'
+import { TabPanel } from '@/components/workspace/TabPanel'
+import { RightPanel } from '@/components/layout/RightPanel'
 
 const projects = [
 	{ id: 1, name: 'Fitness App', color: 'bg-violet-500' },
