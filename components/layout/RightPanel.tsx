@@ -1,14 +1,24 @@
 'use client'
 
-const moreActions = [
-	{ label: '文件匯出', icon: '↑', danger: false },
-	{ label: '分享連結', icon: '⇗', danger: false },
-	{ label: '刪除專案', icon: '✕', danger: true },
+import cx from 'classnames'
+import { Download, Share2, Trash2, LucideIcon } from 'lucide-react'
+
+type Action = {
+	label: string
+	icon: LucideIcon
+	danger?: boolean
+}
+
+const moreActions: Action[] = [
+	{ label: '文件匯出', icon: Download, danger: false },
+	{ label: '分享連結', icon: Share2, danger: false },
+	{ label: '刪除專案', icon: Trash2, danger: true },
 ]
 
 export const RightPanel = () => {
 	const renderMoreActions = () => {
 		return moreActions.map((action) => {
+			const Icon = action.icon
 			const actionColor = action.danger
 				? 'text-red-500 border-red-100 dark:border-red-950 hover:bg-red-50 dark:hover:bg-red-950/40'
 				: 'text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-100'
@@ -16,12 +26,12 @@ export const RightPanel = () => {
 			return (
 				<button
 					key={action.label}
-					className={`
-          w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-colors text-left
-          ${actionColor}
-        `}
+					className={cx(
+						'w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-colors text-left',
+						actionColor,
+					)}
 				>
-					<span className='text-[11px] opacity-70'>{action.icon}</span>
+					<Icon className='w-3.5 h-3.5 opacity-70 text-[11px]' />
 					{action.label}
 				</button>
 			)
@@ -34,8 +44,7 @@ export const RightPanel = () => {
 			w-56 shrink-0 flex flex-col
 			border-l border-neutral-200 dark:border-neutral-800
 			bg-white dark:bg-neutral-950
-			px-4 py-5 gap-6 overflow-y-auto
-		'
+			px-4 py-5 gap-6 overflow-y-auto'
 		>
 			{/* ── 專案狀態 ── */}
 			<div>

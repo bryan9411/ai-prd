@@ -1,23 +1,33 @@
 'use client'
 
+import cx from 'classnames'
 import { useState } from 'react'
 import { PrdContent } from '@/components/workspace/TabPanel/PrdContent'
 import { TasksContent } from '@/components/workspace/TabPanel/TasksContent'
 import { WorkflowContent } from '@/components/workspace/TabPanel/WorkflowContent'
 import { PromptContent } from '@/components/workspace/TabPanel/PromptContent'
 import { SuggestionContent } from '@/components/workspace/TabPanel/SuggestionContent'
+import { FileText, CheckSquare, RefreshCw, Terminal, Lightbulb, LucideIcon } from 'lucide-react'
+
+type TabId = 'prd' | 'tasks' | 'workflow' | 'prompt' | 'suggestion'
+
+type Tab = {
+	id: TabId
+	label: string
+	icon: LucideIcon
+}
 
 interface TabPanelProps {
 	submitted: boolean
 	idea: string
 }
 
-const EmptyState = ({ tabIcon }: { tabIcon: string }) => {
+const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
+	const TabIcon = currentTab.icon
+
 	return (
 		<div className='flex flex-col items-center justify-center py-16 gap-3'>
-			<div className='w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-lg text-neutral-400'>
-				{tabIcon}
-			</div>
+			<TabIcon className='w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-lg text-neutral-400' />
 			<p className='text-sm text-neutral-400 dark:text-neutral-500 text-center max-w-xs leading-relaxed'>
 				輸入你的產品想法，將自動產出完整的 PRD、任務清單與工作流程。
 			</p>
@@ -25,16 +35,16 @@ const EmptyState = ({ tabIcon }: { tabIcon: string }) => {
 	)
 }
 
-const tabs = [
-	{ id: 'prd', label: '需求文件', icon: '▤' },
-	{ id: 'tasks', label: '任務', icon: '✓' },
-	{ id: 'workflow', label: '工作流程', icon: '⟳' },
-	{ id: 'prompt', label: '提示詞', icon: '⌥' },
-	{ id: 'suggestion', label: 'AI 建議', icon: '💡' },
+const tabs: Tab[] = [
+	{ id: 'prd', label: '需求文件', icon: FileText },
+	{ id: 'tasks', label: '任務', icon: CheckSquare },
+	{ id: 'workflow', label: '工作流程', icon: RefreshCw },
+	{ id: 'prompt', label: '提示詞', icon: Terminal },
+	{ id: 'suggestion', label: 'AI 建議', icon: Lightbulb },
 ]
 
 export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
-	const [activeTab, setActiveTab] = useState('prd')
+	const [activeTab, setActiveTab] = useState<TabId>('prd')
 
 	// 採納 AI 建議後，用 enrichedIdea 覆蓋原始 idea 重新渲染各分頁內容
 	const [enrichedIdea, setEnrichedIdea] = useState<string | null>(null)
@@ -50,26 +60,50 @@ export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
 		setActiveTab('prd')
 	}
 
+	const renderTabs = () => {
+		return tabs.map((tab) => {
+			const Icon = tab.icon
+			const activeTabStyle =
+				activeTab === tab.id
+					? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-200 dark:border-neutral-800'
+					: 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
+
+			return (
+				<button
+					key={tab.id}
+					onClick={() => setActiveTab(tab.id)}
+					className={cx(
+						'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+						activeTabStyle,
+					)}
+				>
+					<Icon className='w-3.5 h-3.5 ext-xs opacity-80' />
+					<span>{tab.label}</span>
+				</button>
+			)
+		})
+	}
+
+	const maybeRenderTabContent = () => {
+		if (!submitted) {
+			return <EmptyState currentTab={currentTab} />
+		}
+
+		return (
+			<>
+				{activeTab === 'prd' && <PrdContent idea={activeIdea} />}
+				{activeTab === 'tasks' && <TasksContent />}
+				{activeTab === 'workflow' && <WorkflowContent />}
+				{activeTab === 'prompt' && <PromptContent idea={activeIdea} />}
+				{activeTab === 'suggestion' && <SuggestionContent idea={idea} onAccept={handleAcceptSuggestion} />}
+			</>
+		)
+	}
+
 	return (
 		<div className='flex flex-col gap-3 flex-1'>
 			<div className='flex gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 w-fit border border-neutral-200 dark:border-neutral-800'>
-				{tabs.map((tab) => (
-					<button
-						key={tab.id}
-						onClick={() => setActiveTab(tab.id)}
-						className={`
-              flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all
-              ${
-								activeTab === tab.id
-									? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-200 dark:border-neutral-800'
-									: 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
-							}
-            `}
-					>
-						<span className='text-xs opacity-80'>{tab.icon}</span>
-						<span>{tab.label}</span>
-					</button>
-				))}
+				{renderTabs()}
 			</div>
 
 			{regenerated && (
@@ -81,17 +115,7 @@ export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
 			)}
 
 			<div className='rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-5 shadow-sm flex-1'>
-				{!submitted ? (
-					<EmptyState tabIcon={currentTab.icon} />
-				) : (
-					<>
-						{activeTab === 'prd' && <PrdContent idea={activeIdea} />}
-						{activeTab === 'tasks' && <TasksContent />}
-						{activeTab === 'workflow' && <WorkflowContent />}
-						{activeTab === 'prompt' && <PromptContent idea={activeIdea} />}
-						{activeTab === 'suggestion' && <SuggestionContent idea={idea} onAccept={handleAcceptSuggestion} />}
-					</>
-				)}
+				{maybeRenderTabContent()}
 			</div>
 		</div>
 	)

@@ -1,5 +1,7 @@
 'use client'
 
+import { Sun, Moon } from 'lucide-react'
+
 interface TopbarProps {
 	projectName: string
 	isDark: boolean
@@ -7,6 +9,14 @@ interface TopbarProps {
 }
 
 export const Topbar = ({ projectName, isDark, onToggleDark }: TopbarProps) => {
+	const maybeRenderDarkIcon = () => {
+		if (isDark) {
+			return <Sun className='w-4 h-4' />
+		}
+
+		return <Moon className='w-4 h-4' />
+	}
+
 	return (
 		<header
 			className='
@@ -33,10 +43,9 @@ export const Topbar = ({ projectName, isDark, onToggleDark }: TopbarProps) => {
 						text-neutral-500 dark:text-neutral-400
 						hover:bg-neutral-100 dark:hover:bg-neutral-900
 						border border-neutral-200 dark:border-neutral-800
-						transition-colors text-sm
-					'
+						transition-colors text-sm'
 				>
-					{isDark ? '☀' : '◑'}
+					{maybeRenderDarkIcon()}
 				</button>
 			</div>
 		</header>

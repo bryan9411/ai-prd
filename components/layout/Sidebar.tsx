@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import cx from 'classnames'
+import { LayoutDashboard, Settings, LucideIcon } from 'lucide-react'
 
-const navItems = [
-	{ icon: '⊞', label: '總覽' },
-	{ icon: '◎', label: '設定' },
-]
+type NavItem = {
+	icon: LucideIcon
+	label: string
+}
 
 interface Project {
 	id: number
@@ -13,54 +15,63 @@ interface Project {
 	color: string
 }
 
+interface SidebarProps {
+	activeProject: number
+	onProjectChange: (id: number) => void
+}
+
+const navItems: NavItem[] = [
+	{ icon: LayoutDashboard, label: '總覽' },
+	{ icon: Settings, label: '設定' },
+]
+
 const defaultProjects: Project[] = [
 	{ id: 1, name: 'Fitness App', color: 'bg-violet-500' },
 	{ id: 2, name: 'Blog Platform', color: 'bg-sky-500' },
 	{ id: 3, name: 'E-Commerce', color: 'bg-emerald-500' },
 ]
 
-interface SidebarProps {
-	activeProject: number
-	onProjectChange: (id: number) => void
-}
-
 export const Sidebar = ({ activeProject, onProjectChange }: SidebarProps) => {
 	const [projects] = useState<Project[]>(defaultProjects)
 
 	const renderNavItems = () => {
-		return navItems.map((item) => (
-			<button
-				key={item.label}
-				className='
+		return navItems.map((item) => {
+			const Icon = item.icon
+
+			return (
+				<button
+					key={item.label}
+					className='
           flex items-center gap-2.5 px-2.5 py-1.5 rounded-md
           text-sm text-neutral-500 dark:text-neutral-400
           hover:bg-neutral-100 dark:hover:bg-neutral-900
           hover:text-neutral-900 dark:hover:text-neutral-100
-          transition-colors text-left
-        '
-			>
-				<span className='text-xs opacity-70'>{item.icon}</span>
-				<span>{item.label}</span>
-			</button>
-		))
+          transition-colors text-left'
+				>
+					<Icon className='w-3.5 h-3.5 opacity-70 text-xs ' />
+					<span>{item.label}</span>
+				</button>
+			)
+		})
 	}
 
 	const renderProjectList = () => {
 		return projects.map((project) => {
-			const activeProjectColor =
+			const activeProjectStyle =
 				activeProject === project.id
 					? 'bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 font-medium'
 					: 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900/60 hover:text-neutral-800 dark:hover:text-neutral-200'
+
 			return (
 				<button
 					key={project.id}
 					onClick={() => onProjectChange(project.id)}
-					className={`
-            flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-all text-left
-            ${activeProjectColor}
-          `}
+					className={cx(
+						'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-all text-left',
+						activeProjectStyle,
+					)}
 				>
-					<span className={`w-1.5 h-1.5 rounded-full ${project.color} shrink-0`} />
+					<span className={cx('w-1.5 h-1.5 rounded-full shrink-0', project.color)} />
 					<span className='truncate'>{project.name}</span>
 				</button>
 			)
@@ -72,8 +83,7 @@ export const Sidebar = ({ activeProject, onProjectChange }: SidebarProps) => {
 			className='
 			flex flex-col w-56 shrink-0 h-full
 			bg-white dark:bg-neutral-950
-			border-r border-neutral-200 dark:border-neutral-800
-		'
+			border-r border-neutral-200 dark:border-neutral-800'
 		>
 			{/* ── Logo ── */}
 			<div className='flex items-center gap-2.5 px-4 h-14 border-b border-neutral-200 dark:border-neutral-800 shrink-0'>

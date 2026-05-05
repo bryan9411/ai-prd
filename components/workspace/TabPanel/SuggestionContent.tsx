@@ -1,6 +1,9 @@
 'use client'
 
+import cx from 'classnames'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface Suggestion {
 	id: string
@@ -99,36 +102,13 @@ export const SuggestionContent = ({ idea, onAccept }: SuggestionContentProps) =>
 
 		return (
 			<div className='flex items-center gap-2'>
-				<button
-					onClick={() => handleAccept(s)}
-					disabled={!!accepted || isAccepting}
-					className='
-						flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-						bg-neutral-900 dark:bg-neutral-100
-						text-white dark:text-neutral-900
-						hover:bg-neutral-700 dark:hover:bg-neutral-300
-						disabled:opacity-40 disabled:cursor-not-allowed
-						transition-all active:scale-[0.98]
-					'
-				>
+				<Button onClick={() => handleAccept(s)} disabled={!!accepted || isAccepting} className='gap-1.5'>
 					{renderAcceptIcon(isAccepting)}
 					{isAccepting ? '採納中…' : '採納此建議'}
-				</button>
-
-				<button
-					onClick={() => handleDismiss(s.id)}
-					disabled={!!accepted}
-					className='
-						px-3 py-1.5 rounded-lg text-xs font-medium
-						text-neutral-400 dark:text-neutral-500
-						hover:text-neutral-700 dark:hover:text-neutral-300
-						hover:bg-neutral-100 dark:hover:bg-neutral-900
-						disabled:opacity-40 disabled:cursor-not-allowed
-						transition-colors
-					'
-				>
+				</Button>
+				<Button variant='ghost' onClick={() => handleDismiss(s.id)} disabled={!!accepted}>
 					略過
-				</button>
+				</Button>
 			</div>
 		)
 	}
@@ -136,17 +116,17 @@ export const SuggestionContent = ({ idea, onAccept }: SuggestionContentProps) =>
 	const renderSuggestionItem = (s: Suggestion) => {
 		const isAccepted = accepted === s.id
 		const isAccepting = accepting === s.id
-		const isAcceptedColor = isAccepted
+		const isAcceptedStyle = isAccepted
 			? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
 			: 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300 dark:hover:border-neutral-700'
 
 		return (
-			<div key={s.id} className={`rounded-xl border p-4 transition-all ${isAcceptedColor}`}>
+			<div key={s.id} className={cx('rounded-xl border p-4 transition-all', isAcceptedStyle)}>
 				<div className='flex items-center gap-2 mb-2 flex-wrap'>
 					<span className={categoryStyle}>{s.category}</span>
-					<span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${impactStyle[s.impact]}`}>
+					<Badge variant='outline' className={cx('text-[10px]', impactStyle[s.impact])}>
 						{s.impact} Impact
-					</span>
+					</Badge>
 
 					{isAccepted && (
 						<span className='ml-auto flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400'>
