@@ -18,18 +18,18 @@ interface TaskItemProps {
 
 const priorityOptions: Priority[] = ['High', 'Medium', 'Low']
 
-const badgeStyle: Record<Priority, string> = {
-	High: 'text-red-500 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900',
-	Medium: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
-	Low: 'text-neutral-400 bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800',
-}
-
 export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) => {
 	const [isEditing, setIsEditing] = useState(false)
 	const [editLabel, setEditLabel] = useState(task.label)
 	const [editPriority, setEditPriority] = useState<Priority>(task.priority)
 
 	const inputRef = useRef<HTMLInputElement>(null)
+
+	const badgeStyle: Record<Priority, string> = {
+		High: 'text-red-500 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900',
+		Medium: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
+		Low: 'text-neutral-400 bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800',
+	}
 
 	const isEditingStyle = isEditing
 		? 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900'
@@ -116,6 +116,22 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 		)
 	}
 
+	const maybeRenderEditButton = () => {
+		if (task.readonly) return
+
+		return (
+			<Button
+				size='icon'
+				variant='ghost'
+				title='編輯'
+				onClick={handleStartEdit}
+				className='w-6 h-6 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+			>
+				<Pencil className='w-4 h-4' />
+			</Button>
+		)
+	}
+
 	const renderViewMode = () => {
 		return (
 			<>
@@ -126,15 +142,7 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 				</Badge>
 
 				<div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'>
-					<Button
-						size='icon'
-						variant='ghost'
-						title='編輯'
-						onClick={handleStartEdit}
-						className='w-6 h-6 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-					>
-						<Pencil className='w-4 h-4' />
-					</Button>
+					{maybeRenderEditButton()}
 
 					<Button
 						size='icon'

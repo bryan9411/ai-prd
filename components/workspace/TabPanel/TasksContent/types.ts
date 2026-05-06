@@ -5,4 +5,6 @@ export interface Task {
 	label: string
 	priority: Priority
 	done: boolean
+	readonly?: boolean
+	suggestionId?: string
 }

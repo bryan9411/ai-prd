@@ -1,7 +1,7 @@
 'use client'
 
 import cx from 'classnames'
-import { Download, Share2, Trash2, LucideIcon } from 'lucide-react'
+import { Download, Trash2, LucideIcon } from 'lucide-react'
 
 type Action = {
 	label: string
@@ -11,7 +11,6 @@ type Action = {
 
 const moreActions: Action[] = [
 	{ label: '文件匯出', icon: Download, danger: false },
-	{ label: '分享連結', icon: Share2, danger: false },
 	{ label: '刪除專案', icon: Trash2, danger: true },
 ]
 

@@ -2,15 +2,14 @@
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useProjectContext } from '@/contexts/ProjectContext'
 
-interface IdeaInputProps {
-	idea: string
-	loading: boolean
-	onChange: (val: string) => void
-	onGenerate: () => void
-}
+export const IdeaInput = () => {
+	const { idea, loading, submitted, setIdea, generate } = useProjectContext()
 
-export const IdeaInput = ({ idea, loading, onChange, onGenerate }: IdeaInputProps) => {
+	// 只有「尚未生成（submitted = false）且非 loading 中」才可點擊
+	const isDisabled = loading || submitted
+
 	const renderBtnText = () => {
 		if (loading) {
 			return <span className='inline-block animate-spin text-base leading-none'>↻</span>
@@ -53,13 +52,19 @@ export const IdeaInput = ({ idea, loading, onChange, onGenerate }: IdeaInputProp
 				<Input
 					type='text'
 					value={idea}
-					onChange={(e) => onChange(e.target.value)}
-					onKeyDown={(e) => e.key === 'Enter' && onGenerate()}
+					onChange={(e) => setIdea(e.target.value)}
+					onKeyDown={(e) => e.key === 'Enter' && !isDisabled && generate()}
 					placeholder='例如：我要做一個健身 App…'
 					className='flex-1'
+					disabled={submitted}
 				/>
 
-				<Button onClick={onGenerate} disabled={loading || !idea.trim()} className='gap-1.5 whitespace-nowrap'>
+				<Button
+					onClick={generate}
+					disabled={isDisabled || !idea.trim()}
+					className='gap-1.5 whitespace-nowrap'
+					title={submitted ? '已生成，如需重新生成請先清除儲存資料' : ''}
+				>
 					{renderBtnText()}
 				</Button>
 			</div>

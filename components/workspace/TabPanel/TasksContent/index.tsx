@@ -5,71 +5,39 @@ import { Button } from '@/components/ui/button'
 import { type Task, type Priority } from './types'
 import { TaskItem } from '@/components/workspace/TabPanel/TasksContent/TaskItem'
 import { TaskRowAddInput } from '@/components/workspace/TabPanel/TasksContent/TaskRowAddInput'
-
-const initialTasks: Task[] = [
-	{ id: 't1', label: '設計 UI/UX 原型', priority: 'High', done: false },
-	{ id: 't2', label: '建立後端 API 架構', priority: 'High', done: false },
-	{ id: 't3', label: '實作用戶認證系統', priority: 'Medium', done: false },
-	{ id: 't4', label: '整合 AI 課表推薦', priority: 'Medium', done: false },
-	{ id: 't5', label: '撰寫測試計劃', priority: 'Low', done: false },
-]
+import { useProjectContext } from '@/contexts/ProjectContext'
 
 export const TasksContent = () => {
-	const [tasks, setTasks] = useState<Task[]>(initialTasks)
 	const [adding, setAdding] = useState(false)
+
+	const { tasks, updateTasks } = useProjectContext()
 
 	const done = tasks.filter((t) => t.done).length
 
 	const handleToggle = (id: string) => {
-		setTasks((prev) => {
-			return prev.map((value) => {
-				if (value.id === id) {
-					return { ...value, done: !value.done }
-				}
-				return value
-			})
-		})
+		const next = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+		updateTasks(next)
 	}
 
 	const handleUpdate = (id: string, label: string, priority: Priority) => {
-		setTasks((prev) => {
-			return prev.map((value) => {
-				if (value.id === id) {
-					return { ...value, label, priority }
-				}
-				return value
-			})
-		})
+		const next = tasks.map((t) => (t.id === id ? { ...t, label, priority } : t))
+		updateTasks(next)
 	}
 
 	const handleDelete = (id: string) => {
-		setTasks((prev) => {
-			return prev.filter((value) => value.id !== id)
-		})
+		updateTasks(tasks.filter((t) => t.id !== id))
 	}
 
 	const handleAdd = (label: string, priority: Priority) => {
-		setTasks((prev) => {
-			return [
-				...prev,
-				{
-					id: `t${Date.now()}`,
-					label,
-					priority,
-					done: false,
-				},
-			]
-		})
+		const next: Task[] = [...tasks, { id: `t${Date.now()}`, label, priority, done: false }]
+		updateTasks(next)
 		setAdding(false)
 	}
 
-	const renderTaskItem = () => {
-		return tasks.map((task) => {
-			return (
-				<TaskItem key={task.id} task={task} onToggle={handleToggle} onUpdate={handleUpdate} onDelete={handleDelete} />
-			)
-		})
-	}
+	const renderTaskItem = () =>
+		tasks.map((task) => (
+			<TaskItem key={task.id} task={task} onToggle={handleToggle} onUpdate={handleUpdate} onDelete={handleDelete} />
+		))
 
 	const maybeRenderTaskRowAddInput = () => {
 		if (adding) {

@@ -1,9 +1,9 @@
 'use client'
 
 import cx from 'classnames'
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useProjectContext } from '@/contexts/ProjectContext'
 
 interface Suggestion {
 	id: string
@@ -15,7 +15,6 @@ interface Suggestion {
 
 interface SuggestionContentProps {
 	idea: string
-	onAccept: (enrichedIdea: string) => void
 }
 
 const generateSuggestions = (idea: string): Suggestion[] => [
@@ -65,111 +64,75 @@ const impactStyle: Record<Suggestion['impact'], string> = {
 const categoryStyle =
 	'text-[10px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-900 px-1.5 py-0.5 rounded'
 
-export const SuggestionContent = ({ idea, onAccept }: SuggestionContentProps) => {
-	const [dismissed, setDismissed] = useState<Set<string>>(new Set())
-	const [accepted, setAccepted] = useState<string | null>(null)
-	const [accepting, setAccepting] = useState<string | null>(null)
+export const SuggestionContent = ({ idea }: SuggestionContentProps) => {
+	const { tasks, updateTasks } = useProjectContext()
 
 	const suggestions = generateSuggestions(idea)
-	const visible = suggestions.filter((s) => !dismissed.has(s.id))
-
-	const handleDismiss = (id: string) => {
-		setDismissed((prev) => new Set([...prev, id]))
-	}
 
 	const handleAccept = (suggestion: Suggestion) => {
-		if (accepted) return
-		setAccepting(suggestion.id)
-
-		setTimeout(() => {
-			setAccepted(suggestion.id)
-			setAccepting(null)
-			const enrichedIdea = `${idea}（加入：${suggestion.title}）`
-			onAccept(enrichedIdea)
-		}, 800)
+		updateTasks([
+			...tasks,
+			{
+				id: `suggestion-${suggestion.id}`,
+				label: suggestion.title,
+				priority: 'Medium',
+				done: false,
+				readonly: true,
+				suggestionId: suggestion.id,
+			},
+		])
 	}
 
-	const renderAcceptIcon = (isAccepting: boolean) => {
-		return isAccepting ? (
-			<span className='inline-block animate-spin leading-none'>↻</span>
-		) : (
-			<span className='leading-none'>↑</span>
-		)
-	}
-
-	const renderActions = (s: Suggestion, isAccepted: boolean, isAccepting: boolean) => {
-		if (isAccepted) return null
+	const renderAcceptButton = (suggest: Suggestion) => {
+		const isAdded = tasks.some((task) => task.suggestionId === suggest.id)
 
 		return (
-			<div className='flex items-center gap-2'>
-				<Button onClick={() => handleAccept(s)} disabled={!!accepted || isAccepting} className='gap-1.5'>
-					{renderAcceptIcon(isAccepting)}
-					{isAccepting ? '採納中…' : '採納此建議'}
-				</Button>
-				<Button variant='ghost' onClick={() => handleDismiss(s.id)} disabled={!!accepted}>
-					略過
-				</Button>
-			</div>
+			<Button onClick={() => handleAccept(suggest)} disabled={isAdded} className='gap-1.5'>
+				<span className='leading-none'>{isAdded ? '✓' : '↑'}</span>
+				{isAdded ? '已採納' : '採納此建議'}
+			</Button>
 		)
 	}
 
-	const renderSuggestionItem = (s: Suggestion) => {
-		const isAccepted = accepted === s.id
-		const isAccepting = accepting === s.id
-		const isAcceptedStyle = isAccepted
+	const renderActions = (suggest: Suggestion) => {
+		return <div className='flex items-center gap-2'>{renderAcceptButton(suggest)}</div>
+	}
+
+	const renderSuggestionItem = (suggest: Suggestion) => {
+		const isAdded = tasks.some((task) => task.suggestionId === suggest.id)
+		const cardStyle = isAdded
 			? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
 			: 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300 dark:hover:border-neutral-700'
 
 		return (
-			<div key={s.id} className={cx('rounded-xl border p-4 transition-all', isAcceptedStyle)}>
+			<div key={suggest.id} className={cx('rounded-xl border p-4 transition-all', cardStyle)}>
 				<div className='flex items-center gap-2 mb-2 flex-wrap'>
-					<span className={categoryStyle}>{s.category}</span>
-					<Badge variant='outline' className={cx('text-[10px]', impactStyle[s.impact])}>
-						{s.impact} Impact
+					<span className={categoryStyle}>{suggest.category}</span>
+					<Badge variant='outline' className={cx('text-[10px]', impactStyle[suggest.impact])}>
+						{suggest.impact} Impact
 					</Badge>
 
-					{isAccepted && (
+					{isAdded && (
 						<span className='ml-auto flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400'>
-							<span>✓</span> 已採納
+							<span>✓</span> 已加入任務
 						</span>
 					)}
 				</div>
 
-				<p className='text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-1'>{s.title}</p>
-				<p className='text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed mb-3'>{s.description}</p>
-				{renderActions(s, isAccepted, isAccepting)}
-			</div>
-		)
-	}
-
-	if (visible.length === 0) {
-		return (
-			<div className='flex flex-col items-center justify-center py-16 gap-3'>
-				<div className='w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-lg'>
-					✓
-				</div>
-				<p className='text-sm text-neutral-400 dark:text-neutral-500 text-center'>所有建議已處理完畢</p>
+				<p className='text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-1'>{suggest.title}</p>
+				<p className='text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed mb-3'>{suggest.description}</p>
+				{renderActions(suggest)}
 			</div>
 		)
 	}
 
 	return (
 		<div className='space-y-3'>
-			<div className='flex items-center justify-between'>
-				<p className='text-xs text-neutral-400 dark:text-neutral-500'>
-					AI 針對你的想法提供以下{' '}
-					<span className='text-neutral-700 dark:text-neutral-300 font-medium'>{visible.length}</span> 條加強建議
-				</p>
-
-				{accepted && (
-					<span className='flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400'>
-						<span className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse' />
-						已重新產生文件
-					</span>
-				)}
-			</div>
-
-			{visible.map(renderSuggestionItem)}
+			<p className='text-xs text-neutral-400 dark:text-neutral-500'>
+				AI 針對你的想法提供以下{' '}
+				<span className='text-neutral-700 dark:text-neutral-300 font-medium'>{suggestions.length}</span> 條加強建議
+			</p>
+			{suggestions.map((suggest) => renderSuggestionItem(suggest))}
 		</div>
 	)
 }

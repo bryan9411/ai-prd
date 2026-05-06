@@ -7,7 +7,19 @@ import { TasksContent } from '@/components/workspace/TabPanel/TasksContent'
 import { WorkflowContent } from '@/components/workspace/TabPanel/WorkflowContent'
 import { PromptContent } from '@/components/workspace/TabPanel/PromptContent'
 import { SuggestionContent } from '@/components/workspace/TabPanel/SuggestionContent'
-import { FileText, CheckSquare, RefreshCw, Terminal, Lightbulb, LucideIcon } from 'lucide-react'
+import {
+	FileText,
+	CheckSquare,
+	RefreshCw,
+	Terminal,
+	Lightbulb,
+	LucideIcon,
+	Save,
+	Check,
+	ChevronDown,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useProjectContext } from '@/contexts/ProjectContext'
 
 type TabId = 'prd' | 'tasks' | 'workflow' | 'prompt' | 'suggestion'
 
@@ -17,10 +29,13 @@ type Tab = {
 	icon: LucideIcon
 }
 
-interface TabPanelProps {
-	submitted: boolean
-	idea: string
-}
+const tabs: Tab[] = [
+	{ id: 'prd', label: '需求文件', icon: FileText },
+	{ id: 'tasks', label: '任務', icon: CheckSquare },
+	{ id: 'workflow', label: '工作流程', icon: RefreshCw },
+	{ id: 'prompt', label: '提示詞', icon: Terminal },
+	{ id: 'suggestion', label: 'AI 建議', icon: Lightbulb },
+]
 
 const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
 	const TabIcon = currentTab.icon
@@ -35,38 +50,37 @@ const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
 	)
 }
 
-const tabs: Tab[] = [
-	{ id: 'prd', label: '需求文件', icon: FileText },
-	{ id: 'tasks', label: '任務', icon: CheckSquare },
-	{ id: 'workflow', label: '工作流程', icon: RefreshCw },
-	{ id: 'prompt', label: '提示詞', icon: Terminal },
-	{ id: 'suggestion', label: 'AI 建議', icon: Lightbulb },
-]
+export const TabPanel = () => {
+	const { submitted, idea, isDirty, versions, activeVersionId, isSaveSuccess, saveVersion, loadVersion } =
+		useProjectContext()
 
-export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
 	const [activeTab, setActiveTab] = useState<TabId>('prd')
+	const [versionMenuOpen, setVersionMenuOpen] = useState(false)
 
-	// 採納 AI 建議後，用 enrichedIdea 覆蓋原始 idea 重新渲染各分頁內容
-	const [enrichedIdea, setEnrichedIdea] = useState<string | null>(null)
-	// 採納建議後顯示重新生成的提示
-	const [regenerated, setRegenerated] = useState(false)
+	const currentTab = tabs.find((t) => t.id === activeTab)!
 
-	const currentTab = tabs.find((current) => current.id === activeTab)!
-	const activeIdea = enrichedIdea ?? idea
-
-	const handleAcceptSuggestion = (newIdea: string) => {
-		setEnrichedIdea(newIdea)
-		setRegenerated(true)
-		setActiveTab('prd')
+	const handleSave = () => {
+		saveVersion()
 	}
 
-	const renderTabs = () => {
-		return tabs.map((tab) => {
+	const handleLoadVersion = (versionId: string) => {
+		if (isDirty) {
+			const confirmed = window.confirm('你有尚未儲存的變更，確定要切換版本並放棄這些變更嗎？')
+			if (!confirmed) return
+		}
+		loadVersion(versionId)
+		setVersionMenuOpen(false)
+	}
+
+	const activeVersion = versions.find((v) => v.id === activeVersionId)
+
+	const renderTabs = () =>
+		tabs.map((tab) => {
 			const Icon = tab.icon
-			const activeTabStyle =
-				activeTab === tab.id
-					? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-200 dark:border-neutral-800'
-					: 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
+			const isActive = activeTab === tab.id
+			const activeTabStyle = isActive
+				? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-200 dark:border-neutral-800'
+				: 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
 
 			return (
 				<button
@@ -77,11 +91,100 @@ export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
 						activeTabStyle,
 					)}
 				>
-					<Icon className='w-3.5 h-3.5 ext-xs opacity-80' />
+					<Icon className='w-3.5 h-3.5 opacity-80' />
 					<span>{tab.label}</span>
 				</button>
 			)
 		})
+
+	const maybeRenderVersionDropdown = () => {
+		if (!submitted || versions.length === 0) return null
+
+		return (
+			<div className='relative'>
+				<button
+					onClick={() => setVersionMenuOpen((prev) => !prev)}
+					className='flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all
+						text-neutral-500 dark:text-neutral-400
+						hover:bg-neutral-100 dark:hover:bg-neutral-900
+						border border-neutral-200 dark:border-neutral-800'
+				>
+					<span>{activeVersion?.label ?? '版本'}</span>
+					<ChevronDown className='w-3 h-3 opacity-70' />
+				</button>
+
+				{versionMenuOpen && (
+					<>
+						<div className='fixed inset-0 z-10' onClick={() => setVersionMenuOpen(false)} />
+						<div
+							className='absolute right-0 top-full mt-1 z-20 min-w-35
+							bg-white dark:bg-neutral-900
+							border border-neutral-200 dark:border-neutral-800
+							rounded-lg shadow-lg py-1 overflow-hidden'
+						>
+							{versions.map((v) => (
+								<button
+									key={v.id}
+									onClick={() => handleLoadVersion(v.id)}
+									className={cx(
+										'w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between gap-2',
+										v.id === activeVersionId
+											? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-medium'
+											: 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800',
+									)}
+								>
+									<span>{v.label}</span>
+									<span className='text-neutral-400 dark:text-neutral-600'>
+										{new Date(v.timestamp).toLocaleDateString('zh-TW', {
+											month: 'numeric',
+											day: 'numeric',
+											hour: '2-digit',
+											minute: '2-digit',
+										})}
+									</span>
+								</button>
+							))}
+						</div>
+					</>
+				)}
+			</div>
+		)
+	}
+
+	const maybeRenderSaveButton = () => {
+		if (!submitted) return null
+
+		const canSave = isDirty && !isSaveSuccess
+
+		return (
+			<Button
+				size='sm'
+				variant={isSaveSuccess ? 'ghost' : isDirty ? 'default' : 'outline'}
+				onClick={handleSave}
+				disabled={!canSave}
+				className={cx(
+					'h-7 text-xs gap-1.5 transition-all',
+					isSaveSuccess
+						? 'text-emerald-600 dark:text-emerald-400 pointer-events-none'
+						: !isDirty
+							? 'text-neutral-400 dark:text-neutral-600'
+							: '',
+				)}
+			>
+				{isSaveSuccess ? (
+					<>
+						<Check className='w-3 h-3' />
+						<span>已儲存</span>
+					</>
+				) : (
+					<>
+						<Save className='w-3 h-3' />
+						<span>儲存</span>
+						{isDirty && <span className='w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0' />}
+					</>
+				)}
+			</Button>
+		)
 	}
 
 	const maybeRenderTabContent = () => {
@@ -91,28 +194,27 @@ export const TabPanel = ({ submitted, idea }: TabPanelProps) => {
 
 		return (
 			<>
-				{activeTab === 'prd' && <PrdContent idea={activeIdea} />}
+				{activeTab === 'prd' && <PrdContent idea={idea} />}
 				{activeTab === 'tasks' && <TasksContent />}
 				{activeTab === 'workflow' && <WorkflowContent />}
-				{activeTab === 'prompt' && <PromptContent idea={activeIdea} />}
-				{activeTab === 'suggestion' && <SuggestionContent idea={idea} onAccept={handleAcceptSuggestion} />}
+				{activeTab === 'prompt' && <PromptContent idea={idea} />}
+				{activeTab === 'suggestion' && <SuggestionContent idea={idea} />}
 			</>
 		)
 	}
 
 	return (
 		<div className='flex flex-col gap-3 flex-1'>
-			<div className='flex gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 w-fit border border-neutral-200 dark:border-neutral-800'>
-				{renderTabs()}
-			</div>
-
-			{regenerated && (
-				<div className='flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-700 dark:text-emerald-400'>
-					<span className='w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0' />
-					<span>已根據 AI 建議重新產生所有文件</span>
-					<span className='ml-1 text-emerald-500/70 italic truncate'>{enrichedIdea}</span>
+			<div className='flex items-center gap-2 flex-wrap'>
+				<div className='flex gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 w-fit border border-neutral-200 dark:border-neutral-800'>
+					{renderTabs()}
 				</div>
-			)}
+
+				<div className='flex items-center gap-2 ml-auto'>
+					{maybeRenderVersionDropdown()}
+					{maybeRenderSaveButton()}
+				</div>
+			</div>
 
 			<div className='rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-5 shadow-sm flex-1'>
 				{maybeRenderTabContent()}
