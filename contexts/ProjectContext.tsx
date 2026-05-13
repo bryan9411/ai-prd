@@ -1,35 +1,13 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import {
-	loadProjectData,
-	saveProjectData,
-	buildVersion,
-	pushVersion,
-	type Task,
-	type Step,
-	type ProjectVersion,
-} from '@/lib/project-store'
-
-const MOCK_TASKS: Task[] = [
-	{ id: 't1', label: '設計 UI/UX 原型', priority: 'High', done: false },
-	{ id: 't2', label: '建立後端 API 架構', priority: 'High', done: false },
-	{ id: 't3', label: '實作用戶認證系統', priority: 'Medium', done: false },
-	{ id: 't4', label: '整合 AI 課表推薦', priority: 'Medium', done: false },
-	{ id: 't5', label: '撰寫測試計劃', priority: 'Low', done: false },
-]
-
-const MOCK_STEPS: Step[] = [
-	{ id: 'w1', label: '需求分析' },
-	{ id: 'w2', label: '原型設計' },
-	{ id: 'w3', label: '技術架構' },
-	{ id: 'w4', label: '開發實作' },
-	{ id: 'w5', label: '測試上線' },
-]
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { loadProjectData, saveProjectData } from '@/store/project-store'
+import { buildVersion, pushVersion } from '@/lib/project-utils'
+import type { Task, Step, ProjectVersion } from '@/types/project'
 
 export interface ProjectContextValue {
-	projectId: number
 	submitted: boolean
+	projectId: string
 	loading: boolean
 	idea: string
 	tasks: Task[]
@@ -48,7 +26,7 @@ export interface ProjectContextValue {
 }
 
 interface ProjectProviderProps {
-	projectId: number
+	projectId: string
 	children: ReactNode
 }
 
@@ -61,6 +39,22 @@ interface ProjectState {
 	versions: ProjectVersion[]
 	activeVersionId: string | null
 }
+
+const MOCK_TASKS: Task[] = [
+	{ id: 't1', label: '設計 UI/UX 原型', priority: 'High', done: false },
+	{ id: 't2', label: '建立後端 API 架構', priority: 'High', done: false },
+	{ id: 't3', label: '實作用戶認證系統', priority: 'Medium', done: false },
+	{ id: 't4', label: '整合 AI 課表推薦', priority: 'Medium', done: false },
+	{ id: 't5', label: '撰寫測試計劃', priority: 'Low', done: false },
+]
+
+const MOCK_STEPS: Step[] = [
+	{ id: 'w1', label: '需求分析' },
+	{ id: 'w2', label: '原型設計' },
+	{ id: 'w3', label: '技術架構' },
+	{ id: 'w4', label: '開發實作' },
+	{ id: 'w5', label: '測試上線' },
+]
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
@@ -77,12 +71,13 @@ const emptyProjectState: ProjectState = {
 export const useProjectContext = (): ProjectContextValue => {
 	const ctx = useContext(ProjectContext)
 	if (!ctx) {
-		throw new Error('useProjectContext must be used within ProjectProvider')
+		throw new Error('useProjectContext 需要被 ProjectProvider 包裹')
 	}
+
 	return ctx
 }
 
-const onLoadProjectData = (projectId: number) => {
+const onLoadProjectData = (projectId: string) => {
 	const data = loadProjectData(projectId)
 
 	if (data && data.versions.length > 0) {
@@ -103,7 +98,13 @@ const onLoadProjectData = (projectId: number) => {
 }
 
 export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) => {
-	const [projectState, setProjectState] = useState<ProjectState>(() => onLoadProjectData(projectId))
+	const [projectState, setProjectState] = useState<ProjectState>(emptyProjectState)
+
+	// 從 localStorage 載入初始狀態（useEffect 確保 SSR/CSR 一致，避免 hydration 錯誤）
+	// eslint-disable-next-line react-compiler/react-compiler
+	useEffect(() => {
+		setProjectState(onLoadProjectData(projectId))
+	}, [projectId])
 	const [loading, setLoading] = useState(false)
 	const [isSaveSuccess, setIsSaveSuccess] = useState(false)
 
@@ -127,6 +128,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 
 	const saveVersion = useCallback(() => {
 		const { submitted, isDirty, idea, tasks, steps } = projectState
+
 		if (!submitted || !isDirty) return
 
 		const data = loadProjectData(projectId) ?? { versions: [] }
@@ -134,12 +136,14 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		const nextVersions = pushVersion(data.versions, newVersion)
 
 		saveProjectData(projectId, { versions: nextVersions })
-		setProjectState((prev) => ({
-			...prev,
-			versions: nextVersions,
-			activeVersionId: newVersion.id,
-			isDirty: false,
-		}))
+		setProjectState((prev) => {
+			return {
+				...prev,
+				versions: nextVersions,
+				activeVersionId: newVersion.id,
+				isDirty: false,
+			}
+		})
 
 		setIsSaveSuccess(true)
 		setTimeout(() => setIsSaveSuccess(false), 2000)
@@ -148,7 +152,9 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	const loadVersion = useCallback(
 		(versionId: string) => {
 			const version = projectState.versions.find((v) => v.id === versionId)
+
 			if (!version) return
+
 			setProjectState((prev) => ({
 				...prev,
 				idea: version.idea,
@@ -162,7 +168,8 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	)
 
 	const removeProject = useCallback(() => {
-		localStorage.removeItem(`project-${projectId}`)
+		localStorage.removeItem(`prd_project_${projectId}`)
+
 		setProjectState(emptyProjectState)
 		setLoading(false)
 	}, [projectId])

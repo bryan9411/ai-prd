@@ -58,9 +58,7 @@ export const TasksContent = () => {
 	return (
 		<div className='space-y-2'>
 			<div className='flex items-center justify-between mb-1'>
-				<p className='text-xs text-neutral-400 dark:text-neutral-500'>
-					<span className='font-medium text-neutral-700 dark:text-neutral-300'>{done}</span> / {tasks.length} 完成
-				</p>
+				<div />
 				<Button variant='ghost' size='sm' className='h-7 text-xs text-neutral-400' onClick={() => setAdding(true)}>
 					+ 新增任務
 				</Button>
