@@ -53,12 +53,12 @@ export const WorkflowItem = ({ step, index, isLast, onUpdate, onDelete }: Workfl
 						value={editLabel}
 						onChange={(e) => setEditLabel(e.target.value)}
 						onKeyDown={handleKeyDown}
-						className='h-7 text-sm flex-1'
+						className='h-9 text-sm flex-1'
 					/>
-					<Button size='sm' onClick={handleConfirm} className='h-7 text-xs px-2 shrink-0'>
+					<Button size='sm' onClick={handleConfirm} className='h-9 text-sm px-3 shrink-0'>
 						確認
 					</Button>
-					<Button size='sm' variant='outline' onClick={handleCancel} className='h-7 text-xs px-2 shrink-0'>
+					<Button size='sm' variant='outline' onClick={handleCancel} className='h-9 text-sm px-3 shrink-0'>
 						取消
 					</Button>
 				</>

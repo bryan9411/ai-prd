@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, startTransition, type ReactNode } from 'react'
 import { loadProjectData, saveProjectData } from '@/store/project-store'
-import { buildVersion, pushVersion } from '@/lib/project-utils'
+import { buildVersion, pushVersion, overwriteVersion } from '@/lib/project-utils'
 import type { Task, Step, ProjectVersion } from '@/types/project'
 
 export interface ProjectContextValue {
@@ -12,14 +12,17 @@ export interface ProjectContextValue {
 	idea: string
 	tasks: Task[]
 	steps: Step[]
-	isDirty: boolean // 是否有未儲存的變更
+	isDirty: boolean
 	versions: ProjectVersion[]
 	activeVersionId: string | null
+	pinnedVersionId: string | null
 	isSaveSuccess: boolean
 	setIdea: (idea: string) => void
 	generate: () => void
 	saveVersion: () => void
+	saveOverwrite: (versionId: string) => void // 覆蓋指定版本的內容（原始版本不能覆蓋）
 	loadVersion: (versionId: string) => void
+	pinVersion: (versionId: string) => void
 	updateTasks: (tasks: Task[]) => void
 	updateSteps: (steps: Step[]) => void
 	removeProject: () => void
@@ -38,6 +41,7 @@ interface ProjectState {
 	isDirty: boolean
 	versions: ProjectVersion[]
 	activeVersionId: string | null
+	pinnedVersionId: string | null
 }
 
 const MOCK_TASKS: Task[] = [
@@ -66,6 +70,7 @@ const emptyProjectState: ProjectState = {
 	isDirty: false,
 	versions: [],
 	activeVersionId: null,
+	pinnedVersionId: null,
 }
 
 export const useProjectContext = (): ProjectContextValue => {
@@ -77,20 +82,35 @@ export const useProjectContext = (): ProjectContextValue => {
 	return ctx
 }
 
-const onLoadProjectData = (projectId: string) => {
+const onLoadProjectData = (projectId: string): ProjectState => {
 	const data = loadProjectData(projectId)
 
 	if (data && data.versions.length > 0) {
-		const latest = data.versions[0]
+		// Migration：若舊資料沒有任何 isOrigin，將最舊的版本（最後一筆）標記為 origin
+		let versions = data.versions
+		const hasOrigin = versions.some((v) => v.isOrigin)
+		if (!hasOrigin) {
+			const oldest = versions[versions.length - 1]
+			versions = versions.map((v) =>
+				v.id === oldest.id ? { ...v, isOrigin: true, label: '原始版本' } : v,
+			)
+			saveProjectData(projectId, { ...data, versions })
+		}
+
+		const pinnedId = data.pinnedVersionId ?? null
+		const activeVersion =
+			(pinnedId ? versions.find((v) => v.id === pinnedId) : null) ??
+			versions[versions.length - 1]
 
 		return {
 			submitted: true,
-			idea: latest.idea,
-			tasks: latest.tasks,
-			steps: latest.steps,
+			idea: activeVersion.idea,
+			tasks: activeVersion.tasks,
+			steps: activeVersion.steps,
 			isDirty: false,
-			versions: data.versions,
-			activeVersionId: latest.id,
+			versions,
+			activeVersionId: activeVersion.id,
+			pinnedVersionId: pinnedId,
 		}
 	}
 
@@ -99,32 +119,35 @@ const onLoadProjectData = (projectId: string) => {
 
 export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) => {
 	const [projectState, setProjectState] = useState<ProjectState>(emptyProjectState)
-
-	// 從 localStorage 載入初始狀態（useEffect 確保 SSR/CSR 一致，避免 hydration 錯誤）
-	// eslint-disable-next-line react-compiler/react-compiler
-	useEffect(() => {
-		setProjectState(onLoadProjectData(projectId))
-	}, [projectId])
 	const [loading, setLoading] = useState(false)
 	const [isSaveSuccess, setIsSaveSuccess] = useState(false)
 
-	/** 開始生成（使用假資料） */
+	/** 開始生成（使用假資料），生成完成後自動儲存為「原始版本」 */
 	const generate = useCallback(() => {
 		if (!projectState.idea.trim() || loading || projectState.submitted) return
 
 		setLoading(true)
 		setTimeout(() => {
+			const originVersion = buildVersion(projectState.idea, MOCK_TASKS, MOCK_STEPS, true)
+			const data = loadProjectData(projectId) ?? { versions: [] }
+			const nextVersions = pushVersion(data.versions, originVersion)
+
+			saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: originVersion.id })
+
 			setProjectState((prev) => ({
 				...prev,
 				tasks: MOCK_TASKS,
 				steps: MOCK_STEPS,
 				submitted: true,
-				isDirty: true,
+				isDirty: false,
+				versions: nextVersions,
+				activeVersionId: originVersion.id,
+				pinnedVersionId: originVersion.id,
 			}))
 
 			setLoading(false)
 		}, 1200)
-	}, [projectState.idea, projectState.submitted, loading])
+	}, [projectState.idea, projectState.submitted, loading, projectId])
 
 	const saveVersion = useCallback(() => {
 		const { submitted, isDirty, idea, tasks, steps } = projectState
@@ -132,10 +155,11 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		if (!submitted || !isDirty) return
 
 		const data = loadProjectData(projectId) ?? { versions: [] }
-		const newVersion = buildVersion(idea, tasks, steps, data.versions.length)
+		const newVersion = buildVersion(idea, tasks, steps, false)
 		const nextVersions = pushVersion(data.versions, newVersion)
 
-		saveProjectData(projectId, { versions: nextVersions })
+		saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
+		
 		setProjectState((prev) => {
 			return {
 				...prev,
@@ -148,6 +172,56 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		setIsSaveSuccess(true)
 		setTimeout(() => setIsSaveSuccess(false), 2000)
 	}, [projectState, projectId])
+
+	const saveOverwrite = useCallback(
+		(versionId: string) => {
+			const { submitted, isDirty, idea, tasks, steps, versions } = projectState
+
+			if (!submitted || !isDirty) return
+
+			// origin 版本不允許覆蓋
+			const target = versions.find((v) => v.id === versionId)
+			if (!target || target.isOrigin) return
+
+			const data = loadProjectData(projectId) ?? { versions: [] }
+			const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps)
+
+			saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
+			setProjectState((prev) => ({
+				...prev,
+				versions: nextVersions,
+				activeVersionId: versionId,
+				isDirty: false,
+			}))
+
+			setIsSaveSuccess(true)
+			setTimeout(() => setIsSaveSuccess(false), 2000)
+		},
+		[projectState, projectId],
+	)
+
+	const pinVersion = useCallback(
+		(versionId: string) => {
+			const version = projectState.versions.find((v) => v.id === versionId)
+			if (!version) return
+
+			const data = loadProjectData(projectId)
+			if (data) {
+				saveProjectData(projectId, { ...data, pinnedVersionId: versionId })
+			}
+
+			setProjectState((prev) => ({
+				...prev,
+				idea: version.idea,
+				tasks: version.tasks,
+				steps: version.steps,
+				activeVersionId: versionId,
+				pinnedVersionId: versionId,
+				isDirty: false,
+			}))
+		},
+		[projectState.versions, projectId],
+	)
 
 	const loadVersion = useCallback(
 		(versionId: string) => {
@@ -194,6 +268,12 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		})
 	}, [])
 
+	useEffect(() => {
+		startTransition(() => {
+			setProjectState(onLoadProjectData(projectId))
+		})
+	}, [projectId])
+
 	const value: ProjectContextValue = {
 		projectId,
 		...projectState,
@@ -202,7 +282,9 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		setIdea,
 		generate,
 		saveVersion,
+		saveOverwrite,
 		loadVersion,
+		pinVersion,
 		updateTasks,
 		updateSteps,
 		removeProject,

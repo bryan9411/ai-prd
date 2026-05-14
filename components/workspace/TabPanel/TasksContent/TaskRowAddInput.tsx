@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { type Priority } from '@/components/workspace/TabPanel/TasksContent/types'
+import type { Priority } from '@/components/workspace/TabPanel/TasksContent/types'
 
 interface TaskRowAddInput {
 	onAdd: (label: string, priority: Priority) => void
@@ -36,7 +36,7 @@ export const TaskRowAddInput = ({ onAdd, onCancel }: TaskRowAddInput) => {
 
 	const renderPriorityOptions = () => {
 		return priorityOptions.map((priority) => (
-			<SelectItem key={priority} value={priority} className='text-xs'>
+			<SelectItem key={priority} value={priority} className='text-sm'>
 				{priority}
 			</SelectItem>
 		))
@@ -55,18 +55,18 @@ export const TaskRowAddInput = ({ onAdd, onCancel }: TaskRowAddInput) => {
 				onChange={(e) => setLabel(e.target.value)}
 				onKeyDown={handleKeyDown}
 				placeholder='輸入任務名稱…'
-				className='h-7 text-sm flex-1'
+				className='h-9 text-sm flex-1'
 			/>
 			<Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-				<SelectTrigger className='h-7 w-24 text-xs'>
+				<SelectTrigger className='h-9 w-28 text-sm'>
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>{renderPriorityOptions()}</SelectContent>
 			</Select>
-			<Button size='sm' onClick={handleAdd} className='h-7 text-xs px-2'>
+			<Button size='sm' onClick={handleAdd} className='h-9 text-sm px-3'>
 				新增
 			</Button>
-			<Button size='sm' variant='outline' onClick={onCancel} className='h-7 text-xs px-2'>
+			<Button size='sm' variant='outline' onClick={onCancel} className='h-9 text-sm px-3'>
 				取消
 			</Button>
 		</div>

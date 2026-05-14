@@ -50,12 +50,12 @@ export const StepRowInput = ({ stepNumber, onAdd, onCancel }: StepRowInputProps)
 						onChange={(e) => setLabel(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder='輸入步驟名稱…'
-						className='h-7 text-sm flex-1'
+						className='h-9 text-sm flex-1'
 					/>
-					<Button size='sm' onClick={handleAdd} className='h-7 text-xs px-2 shrink-0'>
+					<Button size='sm' onClick={handleAdd} className='h-9 text-sm px-3 shrink-0'>
 						新增
 					</Button>
-					<Button size='sm' variant='outline' onClick={onCancel} className='h-7 text-xs px-2 shrink-0'>
+					<Button size='sm' variant='outline' onClick={onCancel} className='h-9 text-sm px-3 shrink-0'>
 						取消
 					</Button>
 				</div>

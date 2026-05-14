@@ -7,18 +7,9 @@ import { TasksContent } from '@/components/workspace/TabPanel/TasksContent'
 import { WorkflowContent } from '@/components/workspace/TabPanel/WorkflowContent'
 import { PromptContent } from '@/components/workspace/TabPanel/PromptContent'
 import { SuggestionContent } from '@/components/workspace/TabPanel/SuggestionContent'
-import {
-	FileText,
-	CheckSquare,
-	RefreshCw,
-	Terminal,
-	Lightbulb,
-	LucideIcon,
-	Save,
-	Check,
-	ChevronDown,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { VersionDropdown } from '@/components/workspace/TabPanel/VersionDropdown'
+import { SaveButton } from '@/components/workspace/TabPanel/SaveButton'
+import { FileText, CheckSquare, RefreshCw, Terminal, Lightbulb, type LucideIcon } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 
 type TabId = 'prd' | 'tasks' | 'workflow' | 'prompt' | 'suggestion'
@@ -51,28 +42,11 @@ const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
 }
 
 export const TabPanel = () => {
-	const { submitted, idea, isDirty, versions, activeVersionId, isSaveSuccess, saveVersion, loadVersion } =
-		useProjectContext()
-
 	const [activeTab, setActiveTab] = useState<TabId>('prd')
-	const [versionMenuOpen, setVersionMenuOpen] = useState(false)
+
+	const { submitted, idea } = useProjectContext()
 
 	const currentTab = tabs.find((t) => t.id === activeTab)!
-
-	const handleSave = () => {
-		saveVersion()
-	}
-
-	const handleLoadVersion = (versionId: string) => {
-		if (isDirty) {
-			const confirmed = window.confirm('你有尚未儲存的變更，確定要切換版本並放棄這些變更嗎？')
-			if (!confirmed) return
-		}
-		loadVersion(versionId)
-		setVersionMenuOpen(false)
-	}
-
-	const activeVersion = versions.find((v) => v.id === activeVersionId)
 
 	const renderTabs = () =>
 		tabs.map((tab) => {
@@ -97,100 +71,8 @@ export const TabPanel = () => {
 			)
 		})
 
-	const maybeRenderVersionDropdown = () => {
-		if (!submitted || versions.length === 0) return null
-
-		return (
-			<div className='relative'>
-				<button
-					onClick={() => setVersionMenuOpen((prev) => !prev)}
-					className='flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all
-						text-neutral-500 dark:text-neutral-400
-						hover:bg-neutral-100 dark:hover:bg-neutral-900
-						border border-neutral-200 dark:border-neutral-800'
-				>
-					<span>{activeVersion?.label ?? '版本'}</span>
-					<ChevronDown className='w-3 h-3 opacity-70' />
-				</button>
-
-				{versionMenuOpen && (
-					<>
-						<div className='fixed inset-0 z-10' onClick={() => setVersionMenuOpen(false)} />
-						<div
-							className='absolute right-0 top-full mt-1 z-20 min-w-35
-							bg-white dark:bg-neutral-900
-							border border-neutral-200 dark:border-neutral-800
-							rounded-lg shadow-lg py-1 overflow-hidden'
-						>
-							{versions.map((v) => (
-								<button
-									key={v.id}
-									onClick={() => handleLoadVersion(v.id)}
-									className={cx(
-										'w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between gap-2',
-										v.id === activeVersionId
-											? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-medium'
-											: 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800',
-									)}
-								>
-									<span>{v.label}</span>
-									<span className='text-neutral-400 dark:text-neutral-600'>
-										{new Date(v.timestamp).toLocaleDateString('zh-TW', {
-											month: 'numeric',
-											day: 'numeric',
-											hour: '2-digit',
-											minute: '2-digit',
-										})}
-									</span>
-								</button>
-							))}
-						</div>
-					</>
-				)}
-			</div>
-		)
-	}
-
-	const maybeRenderSaveButton = () => {
-		if (!submitted) return null
-
-		const canSave = isDirty && !isSaveSuccess
-
-		return (
-			<Button
-				size='sm'
-				variant={isSaveSuccess ? 'ghost' : isDirty ? 'default' : 'outline'}
-				onClick={handleSave}
-				disabled={!canSave}
-				className={cx(
-					'h-7 text-xs gap-1.5 transition-all',
-					isSaveSuccess
-						? 'text-emerald-600 dark:text-emerald-400 pointer-events-none'
-						: !isDirty
-							? 'text-neutral-400 dark:text-neutral-600'
-							: '',
-				)}
-			>
-				{isSaveSuccess ? (
-					<>
-						<Check className='w-3 h-3' />
-						<span>已儲存</span>
-					</>
-				) : (
-					<>
-						<Save className='w-3 h-3' />
-						<span>儲存</span>
-						{isDirty && <span className='w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0' />}
-					</>
-				)}
-			</Button>
-		)
-	}
-
-	const maybeRenderTabContent = () => {
-		if (!submitted) {
-			return <EmptyState currentTab={currentTab} />
-		}
+	const renderTabContent = () => {
+		if (!submitted) return <EmptyState currentTab={currentTab} />
 
 		return (
 			<>
@@ -211,13 +93,13 @@ export const TabPanel = () => {
 				</div>
 
 				<div className='flex items-center gap-2 ml-auto'>
-					{maybeRenderVersionDropdown()}
-					{maybeRenderSaveButton()}
+					<VersionDropdown />
+					<SaveButton />
 				</div>
 			</div>
 
 			<div className='rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-5 shadow-sm flex-1'>
-				{maybeRenderTabContent()}
+				{renderTabContent()}
 			</div>
 		</div>
 	)

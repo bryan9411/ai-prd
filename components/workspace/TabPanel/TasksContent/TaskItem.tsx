@@ -64,6 +64,16 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 		setIsEditing(false)
 	}
 
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter') {
+			handleConfirm()
+		}
+
+		if (e.key === 'Escape') {
+			handleCancel()
+		}
+	}
+
 	const maybeRenderCheck = () => {
 		if (task.done) {
 			return <Check className='w-2.5 h-2.5 text-white dark:text-neutral-900' />
@@ -71,19 +81,9 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 	}
 
 	const renderEditMode = () => {
-		const handleKeyDown = (e: React.KeyboardEvent) => {
-			if (e.key === 'Enter') {
-				handleConfirm()
-			}
-
-			if (e.key === 'Escape') {
-				handleCancel()
-			}
-		}
-
 		const renderPriorityOptions = () => {
 			return priorityOptions.map((priority) => (
-				<SelectItem key={priority} value={priority} className='text-xs'>
+				<SelectItem key={priority} value={priority} className='text-sm'>
 					{priority}
 				</SelectItem>
 			))
@@ -96,20 +96,20 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 					value={editLabel}
 					onChange={(e) => setEditLabel(e.target.value)}
 					onKeyDown={handleKeyDown}
-					className='h-7 text-sm flex-1'
+					className='h-9 text-sm flex-1'
 				/>
 
 				<Select value={editPriority} onValueChange={(value) => setEditPriority(value as Priority)}>
-					<SelectTrigger className='h-7 w-24 text-xs'>
+					<SelectTrigger className='h-9 w-28 text-sm'>
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>{renderPriorityOptions()}</SelectContent>
 				</Select>
 
-				<Button size='sm' onClick={handleConfirm} className='h-7 text-xs px-2'>
+				<Button size='sm' onClick={handleConfirm} className='h-9 text-sm px-3'>
 					確認
 				</Button>
-				<Button size='sm' variant='outline' onClick={handleCancel} className='h-7 text-xs px-2'>
+				<Button size='sm' variant='outline' onClick={handleCancel} className='h-9 text-sm px-3'>
 					取消
 				</Button>
 			</div>

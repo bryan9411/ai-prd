@@ -55,14 +55,14 @@ export const IdeaInput = () => {
 					onChange={(e) => setIdea(e.target.value)}
 					onKeyDown={(e) => e.key === 'Enter' && !isDisabled && generate()}
 					placeholder='例如：我要做一個健身 App…'
-					className='flex-1'
+					className='flex-1 h-9 text-sm'
 					disabled={submitted}
 				/>
 
 				<Button
 					onClick={generate}
 					disabled={isDisabled || !idea.trim()}
-					className='gap-1.5 whitespace-nowrap'
+					className='h-9 text-sm gap-2 px-4 whitespace-nowrap'
 					title={submitted ? '已生成，如需重新生成請先清除儲存資料' : ''}
 				>
 					{renderBtnText()}

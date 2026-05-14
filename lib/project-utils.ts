@@ -12,7 +12,7 @@ const PROJECT_COLORS = [
 	'bg-orange-500',
 ]
 
-const MAX_VERSIONS = 3
+const MAX_EDIT_VERSIONS = 2 // 原始版本(不可以編輯) + 最多 2 個編輯版本 = 共 3 筆
 
 export const pickNextColor = (projects: { color: string }[]): string => {
 	const used = new Set(projects.map((p) => p.color))
@@ -20,19 +20,22 @@ export const pickNextColor = (projects: { color: string }[]): string => {
 	return PROJECT_COLORS.find((c) => !used.has(c)) ?? PROJECT_COLORS[projects.length % PROJECT_COLORS.length]
 }
 
-// 產生專案 ID
 export const generateProjectId = () => {
 	return uuidv4().split('-')[0]
 }
 
-// 建立版本
-export const buildVersion = (idea: string, tasks: Task[], steps: Step[], existingCount: number): ProjectVersion => {
+/**
+ * 建立版本
+ * @param isOrigin true = 生成後自動存的原始版本
+ */
+export const buildVersion = (idea: string, tasks: Task[], steps: Step[], isOrigin = false): ProjectVersion => {
 	const timestamp = Date.now()
 
 	return {
 		id: `v_${timestamp}`,
 		timestamp,
-		label: `版本 ${existingCount + 1}`,
+		label: isOrigin ? '原始版本' : '版本',
+		isOrigin,
 		idea,
 		tasks,
 		steps,
@@ -40,10 +43,42 @@ export const buildVersion = (idea: string, tasks: Task[], steps: Step[], existin
 }
 
 /**
- * 將新版本推入陣列最前面，超過 MAX_VERSIONS 時刪除最舊的。
- * 回傳新的版本陣列（不 mutate 原陣列）。
+ * 原地覆蓋指定版本的內容（不改變 id、label、isOrigin）
+ * 只更新 idea / tasks / steps / timestamp
+ */
+export const overwriteVersion = (
+	versions: ProjectVersion[],
+	targetId: string,
+	idea: string,
+	tasks: Task[],
+	steps: Step[],
+): ProjectVersion[] => {
+	return versions.map((v) => (v.id === targetId ? { ...v, idea, tasks, steps, timestamp: Date.now() } : v))
+}
+
+/**
+ * 將新版本推入陣列。
+ * - isOrigin = true：只有在還沒有 origin 時才加入（防止重複）
+ * - isOrigin = false：加到編輯版本尾端，超過 MAX_EDIT_VERSIONS 時刪最舊的編輯版，並重新標籤
+ * 順序：[原始版本, 版本 2（較舊）, 版本 3（最新）]
  */
 export const pushVersion = (versions: ProjectVersion[], newVersion: ProjectVersion): ProjectVersion[] => {
-	const next = [newVersion, ...versions]
-	return next.length > MAX_VERSIONS ? next.slice(0, MAX_VERSIONS) : next
+	if (newVersion.isOrigin) {
+		// 已有 origin 就不重複建立
+		const hasOrigin = versions.some((v) => v.isOrigin)
+		if (hasOrigin) return versions
+		return [newVersion]
+	}
+
+	const origin = versions.find((v) => v.isOrigin)
+	const edits = versions.filter((v) => !v.isOrigin)
+
+	const nextEdits = [...edits, newVersion]
+	const trimmed =
+		nextEdits.length > MAX_EDIT_VERSIONS ? nextEdits.slice(nextEdits.length - MAX_EDIT_VERSIONS) : nextEdits
+
+	// 重新標籤：版本 2, 版本 3
+	const relabeled = trimmed.map((v, i) => ({ ...v, label: `版本 ${i + 2}` }))
+
+	return origin ? [origin, ...relabeled] : relabeled
 }

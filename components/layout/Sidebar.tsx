@@ -106,6 +106,15 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	}
 
 	const maybeRenderAddInput = () => {
+		const handleKeyDown = (e: React.KeyboardEvent) => {
+			if (e.key === 'Enter') {
+				handleConfirmAdd()
+			}
+			if (e.key === 'Escape') {
+				handleCancelAdd()
+			}
+		}
+
 		if (isAdding) {
 			return (
 				<div className='flex items-center gap-1.5 px-2 py-1'>
@@ -114,10 +123,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 						type='text'
 						value={newName}
 						onChange={(e) => setNewName(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter') handleConfirmAdd()
-							if (e.key === 'Escape') handleCancelAdd()
-						}}
+						onKeyDown={handleKeyDown}
 						onBlur={handleConfirmAdd}
 						placeholder='專案名稱'
 						className='

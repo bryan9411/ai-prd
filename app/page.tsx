@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { HeroBanner } from '@/components/workspace/HeroBanner'
@@ -51,8 +51,10 @@ export default function Home() {
 	useEffect(() => {
 		const stored = loadProjects()
 
-		setProjects(stored)
-		setActiveProjectId((prev) => (stored.find((p) => p.id === prev) ? prev : stored[0]?.id))
+		startTransition(() => {
+			setProjects(stored)
+			setActiveProjectId((prev) => (stored.find((p) => p.id === prev) ? prev : stored[0]?.id))
+		})
 	}, [])
 
 	useEffect(() => {

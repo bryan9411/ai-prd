@@ -12,14 +12,14 @@ export interface ProjectMeta {
 export interface ProjectVersion {
 	id: string
 	timestamp: number
-	/** 顯示用標籤，如「版本 1」 */
 	label: string
+	isOrigin?: boolean // 原始版本
 	idea: string
 	tasks: Task[]
 	steps: Step[]
 }
 
 export interface ProjectData {
-	/** index 0 = 最新版本，最多 3 筆 */
 	versions: ProjectVersion[]
+	pinnedVersionId?: string
 }

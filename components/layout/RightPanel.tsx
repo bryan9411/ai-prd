@@ -4,6 +4,7 @@ import cx from 'classnames'
 import { Download, LucideIcon } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 import { Progress } from '@/components/ui/progress'
+import { formatRelativeTime } from '@/lib/dayjs'
 
 type Action = {
 	label: string
@@ -13,29 +14,13 @@ type Action = {
 
 const moreActions: Action[] = [{ label: '文件匯出', icon: Download, danger: false }]
 
-const formatLastUpdated = (timestamp: number): string => {
-	const now = Date.now()
-	const diff = now - timestamp
-	const minute = 60 * 1000
-	const hour = 60 * minute
-	const day = 24 * hour
-	const d = new Date(timestamp)
-
-	if (diff < minute) return '剛剛'
-	if (diff < hour) return `${Math.floor(diff / minute)} 分鐘前`
-	if (diff < day) return `${Math.floor(diff / hour)} 小時前`
-	if (diff < 2 * day) return '昨天'
-
-	return `${d.getMonth() + 1}/${d.getDate()}`
-}
-
 export const RightPanel = () => {
 	const { tasks, versions } = useProjectContext()
 
 	const totalTasks = tasks.length
 	const completedTasks = tasks.filter((t) => t.done).length
 	const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-	const lastUpdated = versions[0]?.timestamp ? formatLastUpdated(versions[0].timestamp) : '—'
+	const lastUpdated = versions.length > 0 ? formatRelativeTime(versions[versions.length - 1].timestamp) : '—'
 
 	const renderMoreActions = () => {
 		return moreActions.map((action) => {
@@ -49,11 +34,11 @@ export const RightPanel = () => {
 					key={action.label}
 					onClick={() => console.log(`執行 ${action.label}`)}
 					className={cx(
-						'w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-colors text-left',
+						'w-full mb-4 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border transition-colors text-left',
 						actionColor,
 					)}
 				>
-					<Icon className='w-3.5 h-3.5 opacity-70 text-[11px]' />
+					<Icon className='w-4 h-4 opacity-70' />
 					{action.label}
 				</button>
 			)
