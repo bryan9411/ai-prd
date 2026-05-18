@@ -1,10 +1,11 @@
 'use client'
 
 import cx from 'classnames'
-import { Download, LucideIcon } from 'lucide-react'
+import { Download, BarChart2, LucideIcon } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 import { Progress } from '@/components/ui/progress'
 import { formatRelativeTime } from '@/lib/dayjs'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 
 type Action = {
 	label: string
@@ -15,7 +16,7 @@ type Action = {
 const moreActions: Action[] = [{ label: '文件匯出', icon: Download, danger: false }]
 
 export const RightPanel = () => {
-	const { tasks, versions } = useProjectContext()
+	const { submitted, tasks, versions } = useProjectContext()
 
 	const totalTasks = tasks.length
 	const completedTasks = tasks.filter((t) => t.done).length
@@ -58,29 +59,41 @@ export const RightPanel = () => {
 				<p className='text-[10px] font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-3'>
 					狀態
 				</p>
-				<div className='space-y-3'>
-					{/* 進度條 */}
-					<div>
-						<div className='flex justify-between mb-1.5'>
-							<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>完成進度</span>
+				{!submitted ? (
+					<Empty>
+						<EmptyHeader>
+							<EmptyMedia variant='icon'>
+								<BarChart2 />
+							</EmptyMedia>
+							<EmptyTitle>尚未產出任何內容</EmptyTitle>
+							<EmptyDescription>輸入想法並送出後，將自動產出任務與進度統計。</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				) : (
+					<div className='space-y-3'>
+						{/* 進度條 */}
+						<div>
+							<div className='flex justify-between mb-1.5'>
+								<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>完成進度</span>
+								<span className='text-[11px] font-medium text-neutral-700 dark:text-neutral-300'>
+									{totalTasks > 0 ? `${progress}%` : '—'}
+								</span>
+							</div>
+							<Progress value={progress} />
+						</div>
+						{/* 任務統計 */}
+						<div className='flex justify-between items-center'>
+							<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>已完成任務</span>
 							<span className='text-[11px] font-medium text-neutral-700 dark:text-neutral-300'>
-								{totalTasks > 0 ? `${progress}%` : '—'}
+								{totalTasks > 0 ? `${completedTasks} / ${totalTasks}` : '—'}
 							</span>
 						</div>
-						<Progress value={progress} />
+						<div className='flex justify-between items-center'>
+							<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>更新時間</span>
+							<span className='text-[11px] font-medium text-neutral-700 dark:text-neutral-300'>{lastUpdated}</span>
+						</div>
 					</div>
-					{/* 任務統計 */}
-					<div className='flex justify-between items-center'>
-						<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>已完成任務</span>
-						<span className='text-[11px] font-medium text-neutral-700 dark:text-neutral-300'>
-							{totalTasks > 0 ? `${completedTasks} / ${totalTasks}` : '—'}
-						</span>
-					</div>
-					<div className='flex justify-between items-center'>
-						<span className='text-[11px] text-neutral-500 dark:text-neutral-400'>更新時間</span>
-						<span className='text-[11px] font-medium text-neutral-700 dark:text-neutral-300'>{lastUpdated}</span>
-					</div>
-				</div>
+				)}
 			</div>
 
 			<div className='border-t border-neutral-100 dark:border-neutral-800' />

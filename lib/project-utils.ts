@@ -15,9 +15,17 @@ const PROJECT_COLORS = [
 const MAX_EDIT_VERSIONS = 2 // 原始版本(不可以編輯) + 最多 2 個編輯版本 = 共 3 筆
 
 export const pickNextColor = (projects: { color: string }[]): string => {
-	const used = new Set(projects.map((p) => p.color))
+	const usedColors = new Set(projects.map((project) => project.color))
 
-	return PROJECT_COLORS.find((c) => !used.has(c)) ?? PROJECT_COLORS[projects.length % PROJECT_COLORS.length]
+	const availableColor = PROJECT_COLORS.find((color) => {
+		return !usedColors.has(color)
+	})
+
+	if (availableColor) {
+		return availableColor
+	}
+
+	return PROJECT_COLORS[projects.length % PROJECT_COLORS.length]
 }
 
 export const generateProjectId = () => {
@@ -53,7 +61,17 @@ export const overwriteVersion = (
 	tasks: Task[],
 	steps: Step[],
 ): ProjectVersion[] => {
-	return versions.map((v) => (v.id === targetId ? { ...v, idea, tasks, steps, timestamp: Date.now() } : v))
+	return versions.map((version) => {
+		if (version.id !== targetId) return version
+
+		return {
+			...version,
+			idea,
+			tasks,
+			steps,
+			timestamp: Date.now(),
+		}
+	})
 }
 
 /**
@@ -65,20 +83,23 @@ export const overwriteVersion = (
 export const pushVersion = (versions: ProjectVersion[], newVersion: ProjectVersion): ProjectVersion[] => {
 	if (newVersion.isOrigin) {
 		// 已有 origin 就不重複建立
-		const hasOrigin = versions.some((v) => v.isOrigin)
+		const hasOrigin = versions.some((version) => version.isOrigin)
 		if (hasOrigin) return versions
+
 		return [newVersion]
 	}
 
-	const origin = versions.find((v) => v.isOrigin)
-	const edits = versions.filter((v) => !v.isOrigin)
+	const origin = versions.find((version) => version.isOrigin)
+	const edits = versions.filter((version) => !version.isOrigin)
 
 	const nextEdits = [...edits, newVersion]
 	const trimmed =
 		nextEdits.length > MAX_EDIT_VERSIONS ? nextEdits.slice(nextEdits.length - MAX_EDIT_VERSIONS) : nextEdits
 
 	// 重新標籤：版本 2, 版本 3
-	const relabeled = trimmed.map((v, i) => ({ ...v, label: `版本 ${i + 2}` }))
+	const relabeled = trimmed.map((value, i) => {
+    return { ...value, label: `版本 ${i + 2}` }
+  })
 
 	return origin ? [origin, ...relabeled] : relabeled
 }

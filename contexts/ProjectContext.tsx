@@ -86,16 +86,25 @@ const onLoadProjectData = (projectId: string): ProjectState => {
 	const data = loadProjectData(projectId)
 
 	if (data && data.versions.length > 0) {
-		// Migration：若舊資料沒有任何 isOrigin，將最舊的版本（最後一筆）標記為 origin
 		let versions = data.versions
+
 		const hasOrigin = versions.some((v) => v.isOrigin)
-		if (!hasOrigin) {
-			const oldest = versions[versions.length - 1]
-			versions = versions.map((v) =>
-				v.id === oldest.id ? { ...v, isOrigin: true, label: '原始版本' } : v,
-			)
-			saveProjectData(projectId, { ...data, versions })
-		}
+		
+    if (!hasOrigin) {
+      const oldestVersion = versions[versions.length - 1]
+
+      versions = versions.map((version) => {
+        if (version.id !== oldestVersion.id) return version
+
+        return {
+          ...version,
+          isOrigin: true,
+          label: '原始版本',
+        }
+      })
+
+      saveProjectData(projectId, { ...data, versions })
+    }
 
 		const pinnedId = data.pinnedVersionId ?? null
 		const activeVersion =
@@ -122,7 +131,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	const [loading, setLoading] = useState(false)
 	const [isSaveSuccess, setIsSaveSuccess] = useState(false)
 
-	/** 開始生成（使用假資料），生成完成後自動儲存為「原始版本」 */
+	// 暫使用假資料，生成完成後自動儲存為「原始版本 origin」
 	const generate = useCallback(() => {
 		if (!projectState.idea.trim() || loading || projectState.submitted) return
 
@@ -173,73 +182,64 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		setTimeout(() => setIsSaveSuccess(false), 2000)
 	}, [projectState, projectId])
 
-	const saveOverwrite = useCallback(
-		(versionId: string) => {
-			const { submitted, isDirty, idea, tasks, steps, versions } = projectState
+	const saveOverwrite = useCallback((versionId: string) => {
+    const { submitted, isDirty, idea, tasks, steps, versions } = projectState
 
-			if (!submitted || !isDirty) return
+    if (!submitted || !isDirty) return
 
-			// origin 版本不允許覆蓋
-			const target = versions.find((v) => v.id === versionId)
-			if (!target || target.isOrigin) return
+    // origin 版本不允許覆蓋
+    const target = versions.find((v) => v.id === versionId)
+    if (!target || target.isOrigin) return
 
-			const data = loadProjectData(projectId) ?? { versions: [] }
-			const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps)
+    const data = loadProjectData(projectId) ?? { versions: [] }
+    const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps)
 
-			saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
-			setProjectState((prev) => ({
-				...prev,
-				versions: nextVersions,
-				activeVersionId: versionId,
-				isDirty: false,
-			}))
+    saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
+    setProjectState((prev) => ({
+      ...prev,
+      versions: nextVersions,
+      activeVersionId: versionId,
+      isDirty: false,
+    }))
 
-			setIsSaveSuccess(true)
-			setTimeout(() => setIsSaveSuccess(false), 2000)
-		},
-		[projectState, projectId],
-	)
+    setIsSaveSuccess(true)
+    setTimeout(() => setIsSaveSuccess(false), 2000)
+  }, [projectState, projectId])
 
-	const pinVersion = useCallback(
-		(versionId: string) => {
-			const version = projectState.versions.find((v) => v.id === versionId)
-			if (!version) return
+	const pinVersion = useCallback((versionId: string) => {
+    const version = projectState.versions.find((v) => v.id === versionId)
+    if (!version) return
 
-			const data = loadProjectData(projectId)
-			if (data) {
-				saveProjectData(projectId, { ...data, pinnedVersionId: versionId })
-			}
+    const data = loadProjectData(projectId)
+    if (data) {
+      saveProjectData(projectId, { ...data, pinnedVersionId: versionId })
+    }
 
-			setProjectState((prev) => ({
-				...prev,
-				idea: version.idea,
-				tasks: version.tasks,
-				steps: version.steps,
-				activeVersionId: versionId,
-				pinnedVersionId: versionId,
-				isDirty: false,
-			}))
-		},
-		[projectState.versions, projectId],
-	)
+    setProjectState((prev) => ({
+      ...prev,
+      idea: version.idea,
+      tasks: version.tasks,
+      steps: version.steps,
+      activeVersionId: versionId,
+      pinnedVersionId: versionId,
+      isDirty: false,
+    }))
+  }, [projectState.versions, projectId])
 
-	const loadVersion = useCallback(
-		(versionId: string) => {
-			const version = projectState.versions.find((v) => v.id === versionId)
+	const loadVersion = useCallback((versionId: string) => {
+    const version = projectState.versions.find((v) => v.id === versionId)
 
-			if (!version) return
+    if (!version) return
 
-			setProjectState((prev) => ({
-				...prev,
-				idea: version.idea,
-				tasks: version.tasks,
-				steps: version.steps,
-				activeVersionId: versionId,
-				isDirty: false,
-			}))
-		},
-		[projectState.versions],
-	)
+    setProjectState((prev) => ({
+      ...prev,
+      idea: version.idea,
+      tasks: version.tasks,
+      steps: version.steps,
+      activeVersionId: versionId,
+      isDirty: false,
+    }))
+  }, [projectState.versions])
 
 	const removeProject = useCallback(() => {
 		localStorage.removeItem(`prd_project_${projectId}`)
@@ -254,14 +254,12 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		})
 	}, [])
 
-	/** Tasks 更新，更新後尚未儲存自動標記 isDirty */
 	const updateTasks = useCallback((nextTasks: Task[]) => {
 		setProjectState((prev) => {
 			return { ...prev, tasks: nextTasks, isDirty: true }
 		})
 	}, [])
 
-	/** Steps 更新，更新後尚未儲存自動標記 isDirty */
 	const updateSteps = useCallback((nextSteps: Step[]) => {
 		setProjectState((prev) => {
 			return { ...prev, steps: nextSteps, isDirty: true }
