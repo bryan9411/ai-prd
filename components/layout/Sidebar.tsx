@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import cx from 'classnames'
-import { LayoutDashboard, Settings, X, LucideIcon } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { LayoutDashboard, Settings, X, Plus, LucideIcon } from 'lucide-react'
+import { useConfirm } from '@/hooks/useConfirm'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { ProjectMeta } from '@/types/project'
 
 type NavItem = {
@@ -27,6 +30,8 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	const [isAdding, setIsAdding] = useState(false)
 	const [newName, setNewName] = useState('')
 
+	const { confirm, ConfirmModal } = useConfirm()
+
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	const handleStartAdd = () => {
@@ -47,22 +52,33 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 		setNewName('')
 	}
 
+  const handleDeleteProject = async (id: string, name: string) => {
+    const confirmed = await confirm({
+      title: '刪除專案？',
+      description: `「${name}」將被永久刪除，此操作無法復原。`,
+      confirmLabel: '刪除',
+      cancelLabel: '取消',
+      variant: 'destructive',
+    })
+    
+    if (confirmed) {
+      onDeleteProject(id)
+    }
+  }
+
 	const renderNavItems = () => {
 		return navItems.map((item) => {
 			const Icon = item.icon
+
 			return (
-				<button
+				<Button
 					key={item.label}
-					className='
-          flex items-center gap-2.5 px-2.5 py-1.5 rounded-md
-          text-sm text-neutral-500 dark:text-neutral-400
-          hover:bg-neutral-100 dark:hover:bg-neutral-900
-          hover:text-neutral-900 dark:hover:text-neutral-100
-          transition-colors text-left'
+					variant='ghost'
+					className='w-full justify-start gap-2.5 px-2.5 h-8 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
 				>
-					<Icon className='w-3.5 h-3.5 opacity-70 text-xs ' />
+					<Icon className='w-3.5 h-3.5 opacity-70' />
 					<span>{item.label}</span>
-				</button>
+				</Button>
 			)
 		})
 	}
@@ -76,30 +92,26 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 
 			return (
 				<div key={project.id} className='group relative'>
-					<button
+					<Button
+						variant='ghost'
 						onClick={() => onProjectChange(project.id)}
 						className={cx(
-							'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-all text-left w-full pr-7',
+							'flex items-center gap-2.5 px-2.5 h-auto py-1.5 rounded-md text-sm transition-all justify-start w-full pr-7',
 							activeProjectStyle,
 						)}
 					>
 						<span className={cx('w-1.5 h-1.5 rounded-full shrink-0', project.color)} />
 						<span className='truncate'>{project.name}</span>
-					</button>
-					<button
-						onClick={(e) => {
-							e.stopPropagation()
-							onDeleteProject(project.id)
-						}}
-						className='
-							absolute right-1.5 top-1/2 -translate-y-1/2
-							opacity-0 group-hover:opacity-100
-							p-0.5 rounded text-neutral-400 hover:text-red-500
-							transition-all'
+					</Button>
+					<Button
+						variant='ghost'
+						size='icon'
+						onClick={() => handleDeleteProject(project.id, project.name)}
+						className='absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 hover:bg-transparent'
 						aria-label={`刪除 ${project.name}`}
 					>
 						<X className='w-3 h-3' />
-					</button>
+					</Button>
 				</div>
 			)
 		})
@@ -110,6 +122,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 			if (e.key === 'Enter') {
 				handleConfirmAdd()
 			}
+
 			if (e.key === 'Escape') {
 				handleCancelAdd()
 			}
@@ -118,7 +131,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 		if (isAdding) {
 			return (
 				<div className='flex items-center gap-1.5 px-2 py-1'>
-					<input
+					<Input
 						ref={inputRef}
 						type='text'
 						value={newName}
@@ -126,12 +139,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 						onKeyDown={handleKeyDown}
 						onBlur={handleConfirmAdd}
 						placeholder='專案名稱'
-						className='
-            flex-1 min-w-0 text-sm bg-transparent outline-none
-            border-b border-neutral-300 dark:border-neutral-600
-            text-neutral-800 dark:text-neutral-200
-          placeholder:text-neutral-400 dark:placeholder:text-neutral-600
-            pb-0.5'
+						className='h-7 text-sm bg-transparent border-0 border-b border-neutral-300 dark:border-neutral-600 rounded-none shadow-none focus-visible:ring-0 px-0 placeholder:text-neutral-400'
 					/>
 				</div>
 			)
@@ -146,6 +154,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 
 	return (
 		<>
+			<ConfirmModal />
 			<aside
 				className='
 			  flex flex-col w-56 shrink-0 h-full
@@ -172,12 +181,14 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 						<span className='text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-widest'>
 							專案列表
 						</span>
-						<button
+						<Button
+							variant='ghost'
+							size='icon'
 							onClick={handleStartAdd}
-							className='text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors text-base leading-none'
+							className='w-5 h-5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
 						>
-							+
-						</button>
+							<Plus className='w-3.5 h-3.5' />
+						</Button>
 					</div>
 					<div className='flex flex-col gap-0.5'>
 						{renderProjectList()}
