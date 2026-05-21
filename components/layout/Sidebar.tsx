@@ -4,13 +4,16 @@ import cx from 'classnames'
 import { useState, useRef, useEffect } from 'react'
 import { LayoutDashboard, Settings, X, Plus, LucideIcon } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
+import { useSettings } from '@/hooks/useSettings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SettingsDialog } from '@/components/SettingsDialog'
 import type { ProjectMeta } from '@/types/project'
 
 type NavItem = {
 	icon: LucideIcon
 	label: string
+	onClick?: () => void
 }
 
 interface SidebarProps {
@@ -21,16 +24,18 @@ interface SidebarProps {
 	onDeleteProject: (id: string) => void
 }
 
-const navItems: NavItem[] = [
-	{ icon: LayoutDashboard, label: '總覽' },
-	{ icon: Settings, label: '設定' },
-]
-
 export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject, onDeleteProject }: SidebarProps) => {
+	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 	const [isAdding, setIsAdding] = useState(false)
 	const [newName, setNewName] = useState('')
 
 	const { confirm, ConfirmModal } = useConfirm()
+	const { apiKey, saveApiKey, clearApiKey } = useSettings()
+
+	const navItems: NavItem[] = [
+		{ icon: LayoutDashboard, label: '總覽' },
+		{ icon: Settings, label: '設定', onClick: () => setIsSettingsOpen(true) },
+	]
 
 	const inputRef = useRef<HTMLInputElement>(null)
 
@@ -52,19 +57,19 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 		setNewName('')
 	}
 
-  const handleDeleteProject = async (id: string, name: string) => {
-    const confirmed = await confirm({
-      title: '刪除專案？',
-      description: `「${name}」將被永久刪除，此操作無法復原。`,
-      confirmLabel: '刪除',
-      cancelLabel: '取消',
-      variant: 'destructive',
-    })
-    
-    if (confirmed) {
-      onDeleteProject(id)
-    }
-  }
+	const handleDeleteProject = async (id: string, name: string) => {
+		const confirmed = await confirm({
+			title: '刪除專案？',
+			description: `「${name}」將被永久刪除，此操作無法復原。`,
+			confirmLabel: '刪除',
+			cancelLabel: '取消',
+			variant: 'destructive',
+		})
+
+		if (confirmed) {
+			onDeleteProject(id)
+		}
+	}
 
 	const renderNavItems = () => {
 		return navItems.map((item) => {
@@ -74,6 +79,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 				<Button
 					key={item.label}
 					variant='ghost'
+					onClick={item.onClick}
 					className='w-full justify-start gap-2.5 px-2.5 h-8 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
 				>
 					<Icon className='w-3.5 h-3.5 opacity-70' />
@@ -155,6 +161,13 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	return (
 		<>
 			<ConfirmModal />
+			<SettingsDialog
+				open={isSettingsOpen}
+				apiKey={apiKey}
+				onClose={() => setIsSettingsOpen(false)}
+				onSave={saveApiKey}
+				onClear={clearApiKey}
+			/>
 			<aside
 				className='
 			  flex flex-col w-56 shrink-0 h-full
