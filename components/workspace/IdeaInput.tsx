@@ -1,14 +1,31 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
+import { useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { useProjectContext } from '@/contexts/ProjectContext'
 
 export const IdeaInput = () => {
 	const { idea, loading, submitted, setIdea, generate } = useProjectContext()
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
 	// 只有「尚未生成（submitted = false）且非 loading 中」才可點擊
 	const isDisabled = loading || submitted
+
+	// 自動調整高度
+	useEffect(() => {
+		const el = textareaRef.current
+		if (!el) return
+		el.style.height = 'auto'
+		el.style.height = `${el.scrollHeight}px`
+	}, [idea])
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		// Cmd+Enter（Mac）或 Ctrl+Enter（Windows/Linux）送出
+		if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !isDisabled && idea.trim()) {
+			e.preventDefault()
+			generate()
+		}
+	}
 
 	const renderBtnText = () => {
 		if (loading) {
@@ -48,21 +65,33 @@ export const IdeaInput = () => {
 				</span>
 			</div>
 
-			<div className='flex gap-2'>
-				<Input
-					type='text'
-					value={idea}
-					onChange={(e) => setIdea(e.target.value)}
-					onKeyDown={(e) => e.key === 'Enter' && !isDisabled && generate()}
-					placeholder='例如：我要做一個健身 App…'
-					className='flex-1 h-9 text-sm'
-					disabled={submitted}
-				/>
+			<textarea
+				ref={textareaRef}
+				value={idea}
+				onChange={(e) => setIdea(e.target.value)}
+				onKeyDown={handleKeyDown}
+				placeholder='例如：我要做一個健身 App，支援課表安排、飲食紀錄…'
+				rows={1}
+				disabled={submitted}
+				className='
+					w-full resize-none overflow-hidden rounded-lg
+					border border-neutral-200 dark:border-neutral-800
+					bg-transparent px-3 py-2 text-sm leading-relaxed
+					placeholder:text-neutral-400 dark:placeholder:text-neutral-600
+					focus:outline-none focus:ring-1 focus:ring-neutral-300 dark:focus:ring-neutral-700
+					disabled:opacity-50 disabled:cursor-not-allowed
+					transition-all min-h-[36px]
+				'
+			/>
 
+			<div className='flex items-center justify-between mt-2.5'>
+				<span className='text-[11px] text-neutral-300 dark:text-neutral-700 select-none'>
+					⌘ Enter 送出
+				</span>
 				<Button
 					onClick={generate}
 					disabled={isDisabled || !idea.trim()}
-					className='h-9 text-sm gap-2 px-4 whitespace-nowrap'
+					className='h-8 text-sm gap-2 px-4 whitespace-nowrap'
 					title={submitted ? '已生成，如需重新生成請先清除儲存資料' : ''}
 				>
 					{renderBtnText()}

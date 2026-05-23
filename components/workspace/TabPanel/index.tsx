@@ -5,14 +5,14 @@ import { useState } from 'react'
 import { PrdContent } from '@/components/workspace/TabPanel/PrdContent'
 import { TasksContent } from '@/components/workspace/TabPanel/TasksContent'
 import { WorkflowContent } from '@/components/workspace/TabPanel/WorkflowContent'
-import { PromptContent } from '@/components/workspace/TabPanel/PromptContent'
+import { PhasesContent } from '@/components/workspace/TabPanel/PhasesContent'
 import { SuggestionContent } from '@/components/workspace/TabPanel/SuggestionContent'
 import { VersionDropdown } from '@/components/workspace/TabPanel/VersionDropdown'
 import { SaveButton } from '@/components/workspace/TabPanel/SaveButton'
-import { FileText, CheckSquare, RefreshCw, Terminal, Lightbulb, type LucideIcon } from 'lucide-react'
+import { FileText, CheckSquare, RefreshCw, GitBranch, Lightbulb, type LucideIcon } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 
-type TabId = 'prd' | 'tasks' | 'workflow' | 'prompt' | 'suggestion'
+type TabId = 'prd' | 'tasks' | 'workflow' | 'phases' | 'suggestion'
 
 type Tab = {
 	id: TabId
@@ -24,12 +24,29 @@ const tabs: Tab[] = [
 	{ id: 'prd', label: '需求文件', icon: FileText },
 	{ id: 'tasks', label: '任務', icon: CheckSquare },
 	{ id: 'workflow', label: '工作流程', icon: RefreshCw },
-	{ id: 'prompt', label: '提示詞', icon: Terminal },
+	{ id: 'phases', label: '分階段計畫', icon: GitBranch },
 	{ id: 'suggestion', label: 'AI 建議', icon: Lightbulb },
 ]
 
-const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
+const EmptyState = ({ currentTab, error, onDismiss }: { currentTab: Tab; error: string | null; onDismiss: () => void }) => {
 	const TabIcon = currentTab.icon
+
+	if (error) {
+		return (
+			<div className='flex flex-col items-center justify-center py-16 gap-3'>
+				<div className='flex items-start gap-2.5 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-sm text-red-600 dark:text-red-400 max-w-sm w-full'>
+					<span className='shrink-0 mt-0.5'>⚠</span>
+					<span className='flex-1 leading-relaxed'>{error}</span>
+					<button
+						onClick={onDismiss}
+						className='shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors'
+					>
+						✕
+					</button>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<div className='flex flex-col items-center justify-center py-16 gap-3'>
@@ -44,7 +61,7 @@ const EmptyState = ({ currentTab }: { currentTab: Tab }) => {
 export const TabPanel = () => {
 	const [activeTab, setActiveTab] = useState<TabId>('prd')
 
-	const { submitted, idea } = useProjectContext()
+	const { submitted, generateError, clearGenerateError } = useProjectContext()
 
 	const currentTab = tabs.find((t) => t.id === activeTab)!
 
@@ -72,15 +89,15 @@ export const TabPanel = () => {
 		})
 
 	const renderTabContent = () => {
-		if (!submitted) return <EmptyState currentTab={currentTab} />
+		if (!submitted) return <EmptyState currentTab={currentTab} error={generateError} onDismiss={clearGenerateError} />
 
 		return (
 			<>
-				{activeTab === 'prd' && <PrdContent idea={idea} />}
+				{activeTab === 'prd' && <PrdContent />}
 				{activeTab === 'tasks' && <TasksContent />}
 				{activeTab === 'workflow' && <WorkflowContent />}
-				{activeTab === 'prompt' && <PromptContent idea={idea} />}
-				{activeTab === 'suggestion' && <SuggestionContent idea={idea} />}
+				{activeTab === 'phases' && <PhasesContent />}
+				{activeTab === 'suggestion' && <SuggestionContent />}
 			</>
 		)
 	}
@@ -104,3 +121,4 @@ export const TabPanel = () => {
 		</div>
 	)
 }
+

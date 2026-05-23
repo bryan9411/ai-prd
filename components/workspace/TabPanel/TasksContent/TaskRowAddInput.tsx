@@ -47,26 +47,27 @@ export const TaskRowAddInput = ({ onAdd, onCancel }: TaskRowAddInput) => {
 	}, [])
 
 	return (
-		<div className='flex items-center gap-2 px-3 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900'>
-			<div className='w-4 h-4 rounded border-2 border-neutral-300 dark:border-neutral-700 shrink-0' />
+		<div className='flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg ring-1 ring-neutral-200 dark:ring-neutral-700 bg-white dark:bg-neutral-900 mb-0.5'>
+			<div className='w-0.5 h-4 rounded-full bg-neutral-200 dark:bg-neutral-700 shrink-0' />
+			<div className='w-4 h-4 rounded-full border-2 border-neutral-200 dark:border-neutral-700 shrink-0' />
 			<Input
 				ref={inputRef}
 				value={label}
 				onChange={(e) => setLabel(e.target.value)}
 				onKeyDown={handleKeyDown}
 				placeholder='輸入任務名稱…'
-				className='h-9 text-sm flex-1'
+				className='h-8 text-sm flex-1 border-0 shadow-none focus-visible:ring-0 px-0'
 			/>
 			<Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-				<SelectTrigger className='h-9 w-28 text-sm'>
+				<SelectTrigger className='h-8 w-28 text-xs shrink-0'>
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>{renderPriorityOptions()}</SelectContent>
 			</Select>
-			<Button size='sm' onClick={handleAdd} className='h-9 text-sm px-3'>
+			<Button size='sm' onClick={handleAdd} className='h-8 text-xs px-2.5 shrink-0'>
 				新增
 			</Button>
-			<Button size='sm' variant='outline' onClick={onCancel} className='h-9 text-sm px-3'>
+			<Button size='sm' variant='outline' onClick={onCancel} className='h-8 text-xs px-2.5 shrink-0'>
 				取消
 			</Button>
 		</div>

@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, startTransition, type ReactNode } from 'react'
 import { loadProjectData, saveProjectData } from '@/store/project-store'
 import { buildVersion, pushVersion, overwriteVersion } from '@/lib/project-utils'
-import type { Task, Step, ProjectVersion } from '@/types/project'
+import type { Task, Step, ProjectVersion, PRDContent, AIPhase, AISuggestion } from '@/types/project'
+import type { AIGenerateOutput } from '@/lib/ai-schema'
 
 export interface ProjectContextValue {
 	submitted: boolean
@@ -12,13 +13,18 @@ export interface ProjectContextValue {
 	idea: string
 	tasks: Task[]
 	steps: Step[]
+	prd: PRDContent | null
+	phases: AIPhase[]
+	suggestions: AISuggestion[]
 	isDirty: boolean
 	versions: ProjectVersion[]
 	activeVersionId: string | null
 	pinnedVersionId: string | null
 	isSaveSuccess: boolean
+	generateError: string | null
 	setIdea: (idea: string) => void
 	generate: () => void
+	clearGenerateError: () => void
 	saveVersion: () => void
 	saveOverwrite: (versionId: string) => void // 覆蓋指定版本的內容（原始版本不能覆蓋）
 	loadVersion: (versionId: string) => void
@@ -38,27 +44,14 @@ interface ProjectState {
 	idea: string
 	tasks: Task[]
 	steps: Step[]
+	prd: PRDContent | null
+	phases: AIPhase[]
+	suggestions: AISuggestion[]
 	isDirty: boolean
 	versions: ProjectVersion[]
 	activeVersionId: string | null
 	pinnedVersionId: string | null
 }
-
-const MOCK_TASKS: Task[] = [
-	{ id: 't1', label: '設計 UI/UX 原型', priority: 'High', done: false },
-	{ id: 't2', label: '建立後端 API 架構', priority: 'High', done: false },
-	{ id: 't3', label: '實作用戶認證系統', priority: 'Medium', done: false },
-	{ id: 't4', label: '整合 AI 課表推薦', priority: 'Medium', done: false },
-	{ id: 't5', label: '撰寫測試計劃', priority: 'Low', done: false },
-]
-
-const MOCK_STEPS: Step[] = [
-	{ id: 'w1', label: '需求分析' },
-	{ id: 'w2', label: '原型設計' },
-	{ id: 'w3', label: '技術架構' },
-	{ id: 'w4', label: '開發實作' },
-	{ id: 'w5', label: '測試上線' },
-]
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
@@ -67,6 +60,9 @@ const emptyProjectState: ProjectState = {
 	idea: '',
 	tasks: [],
 	steps: [],
+	prd: null,
+	phases: [],
+	suggestions: [],
 	isDirty: false,
 	versions: [],
 	activeVersionId: null,
@@ -82,6 +78,18 @@ export const useProjectContext = (): ProjectContextValue => {
 	return ctx
 }
 
+const getActiveVersion = (pinnedId: string | null, versions: ProjectVersion[]) => {
+	if (pinnedId) {
+		const pinnedVersion = versions.find((v) => v.id === pinnedId)
+
+		if (pinnedVersion) {
+			return pinnedVersion
+		}
+	}
+
+	return versions[versions.length - 1]
+}
+
 const onLoadProjectData = (projectId: string): ProjectState => {
 	const data = loadProjectData(projectId)
 
@@ -89,33 +97,34 @@ const onLoadProjectData = (projectId: string): ProjectState => {
 		let versions = data.versions
 
 		const hasOrigin = versions.some((v) => v.isOrigin)
-		
-    if (!hasOrigin) {
-      const oldestVersion = versions[versions.length - 1]
 
-      versions = versions.map((version) => {
-        if (version.id !== oldestVersion.id) return version
+		if (!hasOrigin) {
+			const oldestVersion = versions[versions.length - 1]
 
-        return {
-          ...version,
-          isOrigin: true,
-          label: '原始版本',
-        }
-      })
+			versions = versions.map((version) => {
+				if (version.id !== oldestVersion.id) return version
 
-      saveProjectData(projectId, { ...data, versions })
-    }
+				return {
+					...version,
+					isOrigin: true,
+					label: '原始版本',
+				}
+			})
+
+			saveProjectData(projectId, { ...data, versions })
+		}
 
 		const pinnedId = data.pinnedVersionId ?? null
-		const activeVersion =
-			(pinnedId ? versions.find((v) => v.id === pinnedId) : null) ??
-			versions[versions.length - 1]
+		const activeVersion = getActiveVersion(pinnedId, versions)
 
 		return {
 			submitted: true,
 			idea: activeVersion.idea,
 			tasks: activeVersion.tasks,
 			steps: activeVersion.steps,
+			prd: activeVersion.prd ?? null,
+			phases: activeVersion.phases ?? [],
+			suggestions: activeVersion.suggestions ?? [],
 			isDirty: false,
 			versions,
 			activeVersionId: activeVersion.id,
@@ -130,14 +139,60 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	const [projectState, setProjectState] = useState<ProjectState>(emptyProjectState)
 	const [loading, setLoading] = useState(false)
 	const [isSaveSuccess, setIsSaveSuccess] = useState(false)
+	const [generateError, setGenerateError] = useState<string | null>(null)
 
-	// 暫使用假資料，生成完成後自動儲存為「原始版本 origin」
-	const generate = useCallback(() => {
+	const clearGenerateError = useCallback(() => setGenerateError(null), [])
+
+	const generate = useCallback(async () => {
 		if (!projectState.idea.trim() || loading || projectState.submitted) return
 
+		const apiKey = typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null
+
+		if (!apiKey?.trim()) {
+			setGenerateError('請先至設定中輸入 OpenAI API Key')
+			return
+		}
+
 		setLoading(true)
-		setTimeout(() => {
-			const originVersion = buildVersion(projectState.idea, MOCK_TASKS, MOCK_STEPS, true)
+		setGenerateError(null)
+
+		try {
+			const res = await fetch('/api/generate', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${apiKey}`,
+				},
+				body: JSON.stringify({ idea: projectState.idea }),
+			})
+
+			const json = await res.json()
+
+			if (!res.ok) {
+				setGenerateError(json.error ?? 'AI 生成失敗，請稍後再試')
+				return
+			}
+
+			const output = json as AIGenerateOutput
+
+			const tasks: Task[] = output.tasks.map((t, i) => ({
+				id: `t_${Date.now()}_${i}`,
+				label: t.label,
+				priority: t.priority,
+				done: false,
+			}))
+
+			const steps: Step[] = output.steps.map((s, i) => ({
+				id: `s_${Date.now()}_${i}`,
+				label: s.label,
+			}))
+
+			const originVersion = buildVersion(projectState.idea, tasks, steps, true, {
+				prd: output.prd,
+				phases: output.phases,
+				suggestions: output.suggestions,
+			})
+
 			const data = loadProjectData(projectId) ?? { versions: [] }
 			const nextVersions = pushVersion(data.versions, originVersion)
 
@@ -145,30 +200,35 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 
 			setProjectState((prev) => ({
 				...prev,
-				tasks: MOCK_TASKS,
-				steps: MOCK_STEPS,
+				tasks,
+				steps,
+				prd: output.prd,
+				phases: output.phases,
+				suggestions: output.suggestions,
 				submitted: true,
 				isDirty: false,
 				versions: nextVersions,
 				activeVersionId: originVersion.id,
 				pinnedVersionId: originVersion.id,
 			}))
-
+		} catch {
+			setGenerateError('網路錯誤，請稍後再試')
+		} finally {
 			setLoading(false)
-		}, 1200)
+		}
 	}, [projectState.idea, projectState.submitted, loading, projectId])
 
 	const saveVersion = useCallback(() => {
-		const { submitted, isDirty, idea, tasks, steps } = projectState
+		const { submitted, isDirty, idea, tasks, steps, prd, phases, suggestions } = projectState
 
 		if (!submitted || !isDirty) return
 
 		const data = loadProjectData(projectId) ?? { versions: [] }
-		const newVersion = buildVersion(idea, tasks, steps, false)
+		const newVersion = buildVersion(idea, tasks, steps, false, { prd: prd ?? undefined, phases, suggestions })
 		const nextVersions = pushVersion(data.versions, newVersion)
 
 		saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
-		
+
 		setProjectState((prev) => {
 			return {
 				...prev,
@@ -182,64 +242,84 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		setTimeout(() => setIsSaveSuccess(false), 2000)
 	}, [projectState, projectId])
 
-	const saveOverwrite = useCallback((versionId: string) => {
-    const { submitted, isDirty, idea, tasks, steps, versions } = projectState
+	const saveOverwrite = useCallback(
+		(versionId: string) => {
+			const { submitted, isDirty, idea, tasks, steps, versions, prd, phases, suggestions } = projectState
 
-    if (!submitted || !isDirty) return
+			if (!submitted || !isDirty) return
 
-    // origin 版本不允許覆蓋
-    const target = versions.find((v) => v.id === versionId)
-    if (!target || target.isOrigin) return
+			// origin 版本不允許覆蓋
+			const target = versions.find((v) => v.id === versionId)
+			if (!target || target.isOrigin) return
 
-    const data = loadProjectData(projectId) ?? { versions: [] }
-    const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps)
+			const data = loadProjectData(projectId) ?? { versions: [] }
+			const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps, {
+				prd: prd ?? undefined,
+				phases,
+				suggestions,
+			})
 
-    saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
-    setProjectState((prev) => ({
-      ...prev,
-      versions: nextVersions,
-      activeVersionId: versionId,
-      isDirty: false,
-    }))
+			saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
+			setProjectState((prev) => ({
+				...prev,
+				versions: nextVersions,
+				activeVersionId: versionId,
+				isDirty: false,
+			}))
 
-    setIsSaveSuccess(true)
-    setTimeout(() => setIsSaveSuccess(false), 2000)
-  }, [projectState, projectId])
+			setIsSaveSuccess(true)
+			setTimeout(() => setIsSaveSuccess(false), 2000)
+		},
+		[projectState, projectId],
+	)
 
-	const pinVersion = useCallback((versionId: string) => {
-    const version = projectState.versions.find((v) => v.id === versionId)
-    if (!version) return
+	const pinVersion = useCallback(
+		(versionId: string) => {
+			const version = projectState.versions.find((v) => v.id === versionId)
 
-    const data = loadProjectData(projectId)
-    if (data) {
-      saveProjectData(projectId, { ...data, pinnedVersionId: versionId })
-    }
+			if (!version) return
 
-    setProjectState((prev) => ({
-      ...prev,
-      idea: version.idea,
-      tasks: version.tasks,
-      steps: version.steps,
-      activeVersionId: versionId,
-      pinnedVersionId: versionId,
-      isDirty: false,
-    }))
-  }, [projectState.versions, projectId])
+			const data = loadProjectData(projectId)
+			if (data) {
+				saveProjectData(projectId, { ...data, pinnedVersionId: versionId })
+			}
 
-	const loadVersion = useCallback((versionId: string) => {
-    const version = projectState.versions.find((v) => v.id === versionId)
+			setProjectState((prev) => ({
+				...prev,
+				idea: version.idea,
+				tasks: version.tasks,
+				steps: version.steps,
+				prd: version.prd ?? null,
+				phases: version.phases ?? [],
+				suggestions: version.suggestions ?? [],
+				activeVersionId: versionId,
+				pinnedVersionId: versionId,
+				isDirty: false,
+			}))
+		},
+		[projectState.versions, projectId],
+	)
 
-    if (!version) return
+	const loadVersion = useCallback(
+		(versionId: string) => {
+			const version = projectState.versions.find((v) => v.id === versionId)
 
-    setProjectState((prev) => ({
-      ...prev,
-      idea: version.idea,
-      tasks: version.tasks,
-      steps: version.steps,
-      activeVersionId: versionId,
-      isDirty: false,
-    }))
-  }, [projectState.versions])
+			if (!version) return
+
+			setProjectState((prev) => ({
+				...prev,
+				idea: version.idea,
+				tasks: version.tasks,
+				steps: version.steps,
+				prd: version.prd ?? null,
+				phases: version.phases ?? [],
+				suggestions: version.suggestions ?? [],
+				activeVersionId: versionId,
+				isDirty: false,
+			}))
+		},
+		[projectState.versions],
+	)
 
 	const removeProject = useCallback(() => {
 		localStorage.removeItem(`prd_project_${projectId}`)
@@ -277,8 +357,10 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		...projectState,
 		loading,
 		isSaveSuccess,
+		generateError,
 		setIdea,
 		generate,
+		clearGenerateError,
 		saveVersion,
 		saveOverwrite,
 		loadVersion,

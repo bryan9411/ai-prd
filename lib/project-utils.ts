@@ -1,5 +1,11 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Task, Step, ProjectVersion } from '@/types/project'
+import type { Task, Step, ProjectVersion, PRDContent, AIPhase, AISuggestion } from '@/types/project'
+
+type AIVersionData = {
+	prd?: PRDContent
+	phases?: AIPhase[]
+	suggestions?: AISuggestion[]
+}
 
 const PROJECT_COLORS = [
 	'bg-violet-500',
@@ -35,8 +41,15 @@ export const generateProjectId = () => {
 /**
  * 建立版本
  * @param isOrigin true = 生成後自動存的原始版本
+ * @param aiData AI 生成的 prd / phases / suggestions
  */
-export const buildVersion = (idea: string, tasks: Task[], steps: Step[], isOrigin = false): ProjectVersion => {
+export const buildVersion = (
+	idea: string,
+	tasks: Task[],
+	steps: Step[],
+	isOrigin = false,
+	aiData?: AIVersionData,
+): ProjectVersion => {
 	const timestamp = Date.now()
 
 	return {
@@ -47,6 +60,9 @@ export const buildVersion = (idea: string, tasks: Task[], steps: Step[], isOrigi
 		idea,
 		tasks,
 		steps,
+		...(aiData?.prd !== undefined && { prd: aiData.prd }),
+		...(aiData?.phases !== undefined && { phases: aiData.phases }),
+		...(aiData?.suggestions !== undefined && { suggestions: aiData.suggestions }),
 	}
 }
 
@@ -60,6 +76,7 @@ export const overwriteVersion = (
 	idea: string,
 	tasks: Task[],
 	steps: Step[],
+	aiData?: AIVersionData,
 ): ProjectVersion[] => {
 	return versions.map((version) => {
 		if (version.id !== targetId) return version
@@ -70,6 +87,9 @@ export const overwriteVersion = (
 			tasks,
 			steps,
 			timestamp: Date.now(),
+			...(aiData?.prd !== undefined && { prd: aiData.prd }),
+			...(aiData?.phases !== undefined && { phases: aiData.phases }),
+			...(aiData?.suggestions !== undefined && { suggestions: aiData.suggestions }),
 		}
 	})
 }
