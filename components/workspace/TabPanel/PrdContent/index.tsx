@@ -2,7 +2,11 @@ import React, { ReactNode } from 'react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 
 const SectionTitle = ({ children }: { children: ReactNode }) => {
-	return <h3 className='text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3'>{children}</h3>
+	return (
+		<h3 className='text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-widest mb-3'>
+			{children}
+		</h3>
+	)
 }
 
 export const PrdContent = () => {
@@ -26,10 +30,10 @@ export const PrdContent = () => {
 		return userPersonas.map((persona) => (
 			<div
 				key={persona.name}
-				className='rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-4 py-3'
+				className='rounded-lg bg-stone-50 dark:bg-white/3 border-l-2 border-[#0DAABA]/25 dark:border-[#0DAABA]/20 hover:border-[#0DAABA] dark:hover:border-[#0DAABA] px-4 py-3 transition-colors'
 			>
-				<p className='text-xs font-semibold text-violet-600 dark:text-violet-400 mb-0.5'>{persona.name}</p>
-				<p className='text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed'>{persona.description}</p>
+				<p className='text-xs font-semibold text-[#0A8E9C] dark:text-[#2DD4E4] mb-0.5'>{persona.name}</p>
+				<p className='text-xs text-stone-500 dark:text-neutral-400 leading-relaxed'>{persona.description}</p>
 			</div>
 		))
 	}
@@ -38,11 +42,11 @@ export const PrdContent = () => {
 		return features.map((feature) => (
 			<div
 				key={feature.name}
-				className='rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-3.5'
+				className='rounded-lg bg-stone-50 dark:bg-white/3 border border-stone-200 dark:border-[#2A2825] border-t-2 border-t-transparent hover:border-t-[#0DAABA] p-3.5 transition-all'
 			>
 				<div className='text-xl mb-2'>{feature.icon}</div>
-				<p className='text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-1'>{feature.name}</p>
-				<p className='text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed'>{feature.description}</p>
+				<p className='text-sm font-semibold text-stone-800 dark:text-neutral-200 mb-1'>{feature.name}</p>
+				<p className='text-xs text-stone-500 dark:text-neutral-400 leading-relaxed'>{feature.description}</p>
 			</div>
 		))
 	}
@@ -51,14 +55,14 @@ export const PrdContent = () => {
 		return systemModules.map((module, index) => (
 			<div
 				key={module.name}
-				className='flex items-start gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-3.5 py-3'
+				className='flex items-start gap-3 rounded-lg bg-stone-50 dark:bg-white/3 border border-stone-200 dark:border-[#2A2825] px-3.5 py-3'
 			>
-				<span className='shrink-0 w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 text-[10px] font-bold flex items-center justify-center mt-0.5'>
+				<span className='shrink-0 w-5 h-5 rounded-full bg-[#E4F7F9] dark:bg-[#0DAABA]/15 text-[#0A8E9C] dark:text-[#2DD4E4] text-[10px] font-bold flex items-center justify-center mt-0.5'>
 					{index + 1}
 				</span>
 				<div>
-					<p className='text-xs font-semibold text-neutral-800 dark:text-neutral-200'>{module.name}</p>
-					<p className='text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed mt-0.5'>
+					<p className='text-xs font-semibold text-stone-800 dark:text-neutral-200'>{module.name}</p>
+					<p className='text-[11px] text-stone-500 dark:text-neutral-400 leading-relaxed mt-0.5'>
 						{module.description}
 					</p>
 				</div>
@@ -70,20 +74,20 @@ export const PrdContent = () => {
 		return dataModels.map((model) => (
 			<div
 				key={model.name}
-				className='rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-3 py-2'
+				className='rounded-lg bg-stone-50 dark:bg-white/3 border-l-2 border-[#0DAABA]/30 dark:border-[#0DAABA]/20 px-3 py-2 shadow-sm'
 				title={model.description}
 			>
-				<p className='text-xs font-mono font-semibold text-neutral-800 dark:text-neutral-200'>{model.name}</p>
-				<p className='text-[10px] text-neutral-400 dark:text-neutral-500 mt-0.5'>{model.description}</p>
+				<p className='text-xs font-mono font-semibold text-stone-800 dark:text-neutral-200'>{model.name}</p>
+				<p className='text-[10px] text-stone-400 dark:text-neutral-500 mt-0.5'>{model.description}</p>
 			</div>
 		))
 	}
 
 	const renderValuePropositions = () => {
-		return valuePropositions.map((value, i) => (
-			<li key={i} className='flex items-start gap-2'>
-				<span className='text-emerald-500 mt-0.5 shrink-0'>✓</span>
-				<span className='text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed'>{value}</span>
+		return valuePropositions.map((value, index) => (
+			<li key={index} className='flex items-start gap-2'>
+				<span className='text-[#0DAABA] dark:text-[#14C4D5] mt-0.5 shrink-0'>✓</span>
+				<span className='text-xs text-stone-600 dark:text-neutral-300 leading-relaxed'>{value}</span>
 			</li>
 		))
 	}
@@ -92,16 +96,19 @@ export const PrdContent = () => {
 		<div className='space-y-6'>
 			{/* Tagline + 概覽 */}
 			<div>
-				<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1.5'>{tagline}</p>
-				<p className='text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed'>{overview}</p>
+				<p className='text-[17px] font-bold text-stone-900 dark:text-neutral-100 tracking-tight mb-1.5'>{tagline}</p>
+				<p className='text-sm text-stone-500 dark:text-neutral-400 leading-relaxed'>{overview}</p>
 			</div>
 
 			{/* 產品目標 */}
-			<div className='rounded-xl border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/30 px-4 py-3'>
-				<p className='text-[10px] font-semibold uppercase tracking-widest text-violet-500 dark:text-violet-400 mb-1'>
-					產品目標
-				</p>
-				<p className='text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed'>{productGoal}</p>
+			<div className='flex gap-0'>
+				<div className='w-1 shrink-0 rounded-full bg-[#0DAABA] mr-3' />
+				<div className='flex-1 bg-[#E4F7F9] dark:bg-[#0DAABA]/10 rounded-r-lg px-3 py-2.5'>
+					<p className='text-[10px] font-bold uppercase tracking-widest text-[#0A8E9C] dark:text-[#2DD4E4] mb-1'>
+						產品目標
+					</p>
+					<p className='text-sm text-stone-700 dark:text-neutral-300 leading-relaxed'>{productGoal}</p>
+				</div>
 			</div>
 
 			{/* 使用者角色 */}
@@ -129,7 +136,7 @@ export const PrdContent = () => {
 			</section>
 
 			{/* 核心價值 */}
-			<section className='rounded-xl border border-neutral-200 dark:border-neutral-800 p-4'>
+			<section>
 				<SectionTitle>⭐ {sectionLabels.valuePropositions}</SectionTitle>
 				<ul className='grid grid-cols-1 gap-1.5 sm:grid-cols-2'>{renderValuePropositions()}</ul>
 			</section>

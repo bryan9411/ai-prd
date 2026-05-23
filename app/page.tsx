@@ -31,6 +31,7 @@ export default function Home() {
 		}
 
 		const next = [...projects, newProject]
+
 		setProjects(next)
 		saveProjects(next)
 		setActiveProjectId(newProject.id)
@@ -69,7 +70,7 @@ export default function Home() {
 
 	return (
 		<ProjectProvider key={activeProjectId} projectId={activeProjectId}>
-			<div className='flex h-screen overflow-hidden bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100'>
+			<div className='flex h-screen overflow-hidden bg-background text-foreground'>
 				<Sidebar
 					projects={projects}
 					activeProject={activeProjectId}
@@ -79,15 +80,13 @@ export default function Home() {
 				/>
 				<main className='flex flex-col flex-1 overflow-hidden'>
 					<Topbar projectName={currentProject?.name ?? ''} isDark={isDark} onToggleDark={handleToggleDarkModel} />
-					<div className='flex flex-1 overflow-hidden'>
-						<div className='flex flex-col flex-1 overflow-y-auto px-6 py-6 gap-5'>
-							<HeroBanner projectName={currentProject?.name ?? ''} />
-							<IdeaInput />
-							<TabPanel />
-						</div>
-						<RightPanel />
+					<div className='flex flex-col flex-1 overflow-y-auto px-6 py-6 gap-5'>
+						<HeroBanner projectName={currentProject?.name ?? ''} />
+						<IdeaInput />
+						<TabPanel />
 					</div>
 				</main>
+				<RightPanel />
 			</div>
 		</ProjectProvider>
 	)

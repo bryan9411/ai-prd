@@ -354,7 +354,6 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 
 	const value: ProjectContextValue = {
 		projectId,
-		...projectState,
 		loading,
 		isSaveSuccess,
 		generateError,
@@ -368,6 +367,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		updateTasks,
 		updateSteps,
 		removeProject,
+		...projectState,
 	}
 
 	return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>

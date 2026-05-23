@@ -13,7 +13,8 @@ export const VersionDropdown = () => {
 	const [menuOpen, setMenuOpen] = useState(false)
 
 	const { confirm, ConfirmModal } = useConfirm()
-	const { submitted, isDirty, versions, activeVersionId, pinnedVersionId, loadVersion, pinVersion } = useProjectContext()
+	const { submitted, isDirty, versions, activeVersionId, pinnedVersionId, loadVersion, pinVersion } =
+		useProjectContext()
 
 	if (!submitted || versions.length === 0) return null
 
@@ -62,31 +63,28 @@ export const VersionDropdown = () => {
 			const isActive = version.id === activeVersionId
 			const isPinned = version.id === pinnedVersionId
 
-			const rowStyle = isActive
-				? 'bg-neutral-100 dark:bg-neutral-800'
-				: 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
+			const rowStyle = isActive ? 'bg-stone-100 dark:bg-white/5' : 'hover:bg-stone-50 dark:hover:bg-white/[0.03]'
 			const textStyle = isActive
-				? 'text-neutral-900 dark:text-neutral-100 font-medium'
-				: 'text-neutral-600 dark:text-neutral-400'
+				? 'text-stone-900 dark:text-neutral-100 font-medium'
+				: 'text-stone-600 dark:text-neutral-400'
 			const pinStyle = isPinned
-				? 'text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50'
-				: 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+				? 'text-[#0A8E9C] dark:text-[#2DD4E4] bg-[#E4F7F9] dark:bg-[#0DAABA]/12 hover:bg-[#E4F7F9] dark:hover:bg-[#0DAABA]/20'
+				: 'text-stone-300 dark:text-neutral-600 hover:text-stone-500 dark:hover:text-neutral-400 hover:bg-stone-100 dark:hover:bg-white/5'
 
 			return (
 				<div key={version.id} className={cx('flex items-center gap-1.5 px-3 py-2 transition-colors', rowStyle)}>
-					{/* 版本資訊（點擊切換） */}
 					<Button
 						variant='ghost'
 						onClick={() => handleLoadVersion(version.id)}
-						className={cx('flex-1 h-auto py-0 px-0 justify-between gap-3 min-w-0 hover:bg-transparent font-normal', textStyle)}
+						className={cx(
+							'flex-1 h-auto py-0 px-0 justify-between gap-3 min-w-0 hover:bg-transparent font-normal',
+							textStyle,
+						)}
 					>
 						<span className='text-sm'>{version.label}</span>
-						<span className='shrink-0 text-xs text-neutral-400 dark:text-neutral-500'>
-							{handleVersionDate(version)}
-						</span>
+						<span className='shrink-0 text-xs text-stone-400 dark:text-neutral-500'>{handleVersionDate(version)}</span>
 					</Button>
 
-					{/* 釘選按鈕 */}
 					<Button
 						variant='ghost'
 						size='icon'
@@ -107,13 +105,8 @@ export const VersionDropdown = () => {
 		return (
 			<>
 				<div className='fixed inset-0 z-10' onClick={() => setMenuOpen(false)} />
-				<div
-					className='absolute right-0 top-full mt-1.5 z-20 min-w-64
-          bg-white dark:bg-neutral-900
-          border border-neutral-200 dark:border-neutral-800
-          rounded-xl shadow-xl py-1.5 overflow-hidden'
-				>
-					<p className='px-4 pt-1.5 pb-2.5 text-xs text-neutral-400 dark:text-neutral-500 border-b border-neutral-100 dark:border-neutral-800'>
+				<div className='absolute right-0 top-full mt-1.5 z-20 min-w-64 bg-white dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] rounded-xl shadow-xl py-1.5 overflow-hidden'>
+					<p className='px-4 pt-1.5 pb-2.5 text-xs text-stone-400 dark:text-neutral-500 border-b border-stone-100 dark:border-[#2A2825]'>
 						釘選後，重整頁面將自動載入該版本
 					</p>
 					{renderVersions()}
@@ -127,10 +120,11 @@ export const VersionDropdown = () => {
 			<ConfirmModal />
 			<button
 				onClick={() => setMenuOpen((prev) => !prev)}
-				className='flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all
-					text-neutral-500 dark:text-neutral-400
-					hover:bg-neutral-100 dark:hover:bg-neutral-900
-					border border-neutral-200 dark:border-neutral-800'
+				className='
+          flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all
+					text-stone-500 dark:text-neutral-400
+					hover:bg-stone-100 dark:hover:bg-white/5
+					border border-stone-200 dark:border-[#2A2825]'
 			>
 				{pinnedVersionId && <Pin className='w-3.5 h-3.5 opacity-70' />}
 				<span>{activeVersion?.label ?? '版本'}</span>

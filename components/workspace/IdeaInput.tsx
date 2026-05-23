@@ -6,21 +6,12 @@ import { useProjectContext } from '@/contexts/ProjectContext'
 
 export const IdeaInput = () => {
 	const { idea, loading, submitted, setIdea, generate } = useProjectContext()
+
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-	// 只有「尚未生成（submitted = false）且非 loading 中」才可點擊
 	const isDisabled = loading || submitted
 
-	// 自動調整高度
-	useEffect(() => {
-		const el = textareaRef.current
-		if (!el) return
-		el.style.height = 'auto'
-		el.style.height = `${el.scrollHeight}px`
-	}, [idea])
-
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		// Cmd+Enter（Mac）或 Ctrl+Enter（Windows/Linux）送出
 		if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !isDisabled && idea.trim()) {
 			e.preventDefault()
 			generate()
@@ -43,24 +34,28 @@ export const IdeaInput = () => {
 	const maybeRenderInputPreview = () => {
 		if (idea) {
 			return (
-				<p className='mt-2.5 text-xs text-neutral-400 dark:text-neutral-500 flex items-center gap-1.5'>
-					<span className='text-violet-500'>↳</span>
+				<p className='mt-2.5 text-xs text-stone-400 dark:text-neutral-600 flex items-center gap-1.5'>
+					<span className='text-[#0DAABA]'>↳</span>
 					<span className='text-neutral-600 dark:text-neutral-400 italic'>&ldquo;{idea}&rdquo;</span>
 				</p>
 			)
 		}
 	}
 
+	// 自動調整高度
+	useEffect(() => {
+		const el = textareaRef.current
+
+		if (!el) return
+
+		el.style.height = 'auto'
+		el.style.height = `${el.scrollHeight}px`
+	}, [idea])
+
 	return (
-		<section
-			className='
-				rounded-xl bg-white dark:bg-neutral-950
-				border border-neutral-200 dark:border-neutral-800
-				p-5 shadow-sm
-			'
-		>
+		<section className='rounded-xl bg-white dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] p-5 shadow-sm'>
 			<div className='flex items-center gap-2 mb-3'>
-				<span className='text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-widest'>
+				<span className='text-xs font-bold text-stone-400 dark:text-neutral-600 uppercase tracking-widest'>
 					輸入你的產品想法
 				</span>
 			</div>
@@ -75,23 +70,21 @@ export const IdeaInput = () => {
 				disabled={submitted}
 				className='
 					w-full resize-none overflow-hidden rounded-lg
-					border border-neutral-200 dark:border-neutral-800
-					bg-transparent px-3 py-2 text-sm leading-relaxed
-					placeholder:text-neutral-400 dark:placeholder:text-neutral-600
-					focus:outline-none focus:ring-1 focus:ring-neutral-300 dark:focus:ring-neutral-700
+					border border-stone-200 dark:border-[#2A2825]
+					bg-stone-50/60 dark:bg-white/3 px-3 py-2 text-sm leading-relaxed
+					placeholder:text-stone-400 dark:placeholder:text-neutral-600
+					focus:outline-none focus:ring-2 focus:ring-[#0DAABA]/30 dark:focus:ring-[#0DAABA]/20
 					disabled:opacity-50 disabled:cursor-not-allowed
-					transition-all min-h-[36px]
+					transition-all min-h-9
 				'
 			/>
 
 			<div className='flex items-center justify-between mt-2.5'>
-				<span className='text-[11px] text-neutral-300 dark:text-neutral-700 select-none'>
-					⌘ Enter 送出
-				</span>
+				<span className='text-[11px] text-stone-300 dark:text-neutral-700 select-none'>⌘ Enter 送出</span>
 				<Button
 					onClick={generate}
 					disabled={isDisabled || !idea.trim()}
-					className='h-8 text-sm gap-2 px-4 whitespace-nowrap'
+					className='h-8 text-sm gap-2 px-4 whitespace-nowrap shadow-[0_2px_12px_rgba(13,170,186,0.35)] disabled:shadow-none'
 					title={submitted ? '已生成，如需重新生成請先清除儲存資料' : ''}
 				>
 					{renderBtnText()}

@@ -4,17 +4,18 @@ import { useProjectContext } from '@/contexts/ProjectContext'
 interface HeroBannerProps {
 	projectName: string
 }
- 
+
 export const HeroBanner = ({ projectName }: HeroBannerProps) => {
 	const { tasks } = useProjectContext()
 
-	const isDoneBadge = tasks.length > 0 && tasks.every(task => task.done)
+	const isDoneBadge = tasks.length > 0 && tasks.every((task) => task.done)
 	const isNotStartYetBadge = tasks.length === 0
 
 	const renderBradgeText = () => {
 		if (isNotStartYetBadge) {
 			return (
-				<span className='text-[10px] px-1.5 py-0.5 rounded font-semibold border bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900'>
+				<span className='inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400'>
+					<span className='w-1.5 h-1.5 rounded-full bg-current inline-block' />
 					尚未開始
 				</span>
 			)
@@ -22,32 +23,26 @@ export const HeroBanner = ({ projectName }: HeroBannerProps) => {
 
 		const badgeText = isDoneBadge ? '已完成' : '進行中'
 		const badgeColor = isDoneBadge
-			? 'bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400 border-green-200 dark:border-green-900'
-			: 'bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-900'
+			? 'bg-green-100 dark:bg-green-950/60 text-green-600 dark:text-green-400'
+			: 'bg-[#E4F7F9] dark:bg-[#0DAABA]/15 text-[#0A8E9C] dark:text-[#2DD4E4]'
 
 		return (
-			<span className={cx('text-[10px] px-1.5 py-0.5 rounded font-semibold border', badgeColor)}>
+			<span
+				className={cx('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold', badgeColor)}
+			>
+				<span className='w-1.5 h-1.5 rounded-full bg-current inline-block' />
 				{badgeText}
 			</span>
 		)
 	}
 
-  return (
-		<div
-			className='
-			rounded-xl border border-neutral-200 dark:border-neutral-800
-			bg-neutral-50 dark:bg-neutral-900/40
-			px-6 py-5'
-		>
+	return (
+		<div className='py-1'>
 			<div className='flex items-start justify-between gap-4 flex-wrap'>
 				<div>
-					<div className='flex items-center gap-2 mb-1'>
-						<h1 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight'>
-							{projectName}
-						</h1>
-						{renderBradgeText()}
-					</div>
-					<p className='text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-sm'>
+					<div className='flex items-center gap-2 mb-2'>{renderBradgeText()}</div>
+					<h1 className='text-2xl font-bold text-stone-900 dark:text-neutral-100 tracking-tight mb-2'>{projectName}</h1>
+					<p className='text-sm text-stone-500 dark:text-neutral-400 leading-relaxed max-w-sm'>
 						輸入你的產品想法，將自動產出完整的 PRD、任務清單與工作流程。
 					</p>
 				</div>
