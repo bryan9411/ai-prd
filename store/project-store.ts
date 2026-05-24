@@ -2,29 +2,21 @@ import type { ProjectMeta, ProjectData } from '@/types/project'
 
 const PROJECTS_KEY = 'prd_projects'
 
-export const defaultProjects: ProjectMeta[] = [
-	{ id: '1', name: 'Fitness App', color: 'bg-violet-500' },
-	{ id: '2', name: 'Blog Platform', color: 'bg-sky-500' },
-	{ id: '3', name: 'E-Commerce', color: 'bg-emerald-500' },
-]
-
 export const loadProjects = (): ProjectMeta[] => {
 	if (typeof window === 'undefined') {
-		return defaultProjects
+		return []
 	}
 
 	try {
 		const raw = localStorage.getItem(PROJECTS_KEY)
 
-		if (!raw) {
-			return defaultProjects
-		}
+		if (!raw) return []
 
 		const parsed = JSON.parse(raw) as ProjectMeta[]
 
-		return parsed.length > 0 ? parsed : defaultProjects
+		return parsed
 	} catch {
-		return defaultProjects
+		return []
 	}
 }
 
@@ -33,7 +25,7 @@ export const saveProjects = (projects: ProjectMeta[]): void => {
 	localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects))
 }
 
-// ---- 單一專案的 PRD 內容（versions / tasks / workflow / ai suggestions） ----
+//  單一專案的 PRD 內容（versions / tasks / workflow / phase / ai suggestions
 
 const projectKey = (projectId: string) => `prd_project_${projectId}`
 

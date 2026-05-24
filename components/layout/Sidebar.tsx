@@ -2,12 +2,13 @@
 
 import cx from 'classnames'
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
-import { LayoutDashboard, Settings, X, Plus, LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Settings, X, Plus, FolderOpen, LucideIcon } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useSettings } from '@/hooks/useSettings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SettingsDialog } from '@/components/SettingsDialog'
+import { EmptyHint } from '@/components/EmptyHint'
 import type { ProjectMeta } from '@/types/project'
 
 type NavItem = {
@@ -90,6 +91,10 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	}
 
 	const renderProjectList = () => {
+		if (projects.length === 0) {
+			return <EmptyHint compact icon={FolderOpen} title='尚未建立任何專案' />
+		}
+
 		return projects.map((project) => {
 			const isActive = activeProject === project.id
 			const activeProjectStyle = isActive

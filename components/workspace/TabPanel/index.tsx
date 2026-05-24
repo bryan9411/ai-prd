@@ -11,6 +11,7 @@ import { VersionDropdown } from '@/components/workspace/TabPanel/VersionDropdown
 import { SaveButton } from '@/components/workspace/TabPanel/SaveButton'
 import { FileText, CheckSquare, RefreshCw, GitBranch, Lightbulb, type LucideIcon } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
+import { EmptyHint } from '@/components/EmptyHint'
 
 type TabId = 'prd' | 'tasks' | 'workflow' | 'phases' | 'suggestion'
 
@@ -35,8 +36,6 @@ const tabs: Tab[] = [
 ]
 
 const EmptyState = ({ currentTab, error, onDismiss }: EmptyStateProps) => {
-	const TabIcon = currentTab.icon
-
 	if (error) {
 		return (
 			<div className='flex flex-col items-center justify-center py-16 gap-3'>
@@ -55,12 +54,11 @@ const EmptyState = ({ currentTab, error, onDismiss }: EmptyStateProps) => {
 	}
 
 	return (
-		<div className='flex flex-col items-center justify-center py-16 gap-3'>
-			<TabIcon className='w-10 h-10 rounded-xl bg-stone-100 dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] flex items-center justify-center text-lg text-stone-400' />
-			<p className='text-sm text-neutral-400 dark:text-neutral-500 text-center max-w-xs leading-relaxed'>
-				輸入你的產品想法，將自動產出完整的 PRD、任務清單與工作流程。
-			</p>
-		</div>
+		<EmptyHint
+			icon={currentTab.icon}
+			title='尚未產出任何內容'
+			description='輸入你的產品想法，將自動產出完整的 PRD、任務清單與工作流程。'
+		/>
 	)
 }
 

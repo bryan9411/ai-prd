@@ -354,6 +354,8 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	}, [])
 
 	useEffect(() => {
+		if (!projectId) return
+
 		startTransition(() => {
 			setProjectState(onLoadProjectData(projectId))
 		})

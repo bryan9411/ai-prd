@@ -4,7 +4,7 @@ import { BarChart2 } from 'lucide-react'
 import { useProjectContext } from '@/contexts/ProjectContext'
 import { Progress } from '@/components/ui/progress'
 import { formatRelativeTime } from '@/lib/dayjs'
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { EmptyHint } from '@/components/EmptyHint'
 import { ProjectVersion } from '@/types/project'
 
 export const RightPanel = () => {
@@ -18,6 +18,7 @@ export const RightPanel = () => {
 	const renderVersionsHistoryReverse = (versions: ProjectVersion[]) => {
 		return [...versions].reverse().map((version) => {
 			const isPinned = version.id === pinnedVersionId
+
 			return (
 				<div
 					key={version.id}
@@ -42,15 +43,11 @@ export const RightPanel = () => {
 	const maybeRenderProjectStatus = () => {
 		if (!submitted) {
 			return (
-				<Empty>
-					<EmptyHeader>
-						<EmptyMedia variant='icon'>
-							<BarChart2 />
-						</EmptyMedia>
-						<EmptyTitle>尚未產出任何內容</EmptyTitle>
-						<EmptyDescription>輸入想法並送出後，將自動產出任務與進度統計。</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
+				<EmptyHint
+					icon={BarChart2}
+					title='尚未產出任何內容'
+					description='輸入想法並送出後，將自動產出任務與進度統計。'
+				/>
 			)
 		}
 
