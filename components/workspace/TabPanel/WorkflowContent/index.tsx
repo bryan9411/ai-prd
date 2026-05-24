@@ -4,35 +4,64 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { WorkflowItem } from '@/components/workspace/TabPanel/WorkflowContent/WorkflowItem'
 import { StepRowInput } from '@/components/workspace/TabPanel/WorkflowContent/StepRowInput'
-import { type Step } from '@/components/workspace/TabPanel/WorkflowContent/types'
 import { useProjectContext } from '@/contexts/ProjectContext'
+import { type WorkflowStep } from '@/types/project'
 
 export const WorkflowContent = () => {
-	const { steps, updateSteps } = useProjectContext()
+	const { workflow, updateWorkflow } = useProjectContext()
 	const [isAdding, setIsAdding] = useState(false)
 
-	const handleUpdateItem = (id: string, label: string) => {
-		const next = steps.map((s) => (s.id === id ? { ...s, label } : s))
-		updateSteps(next)
+	const handleUpdateItem = (id: string, field: 'roleAStep' | 'roleBStep', value: string) => {
+		const nextSteps = workflow.steps.map((step) => {
+			const isTargetStep = step.id === id
+
+			if (!isTargetStep) return step
+
+			return {
+				...step,
+				[field]: value,
+			}
+		})
+
+		updateWorkflow({
+			...workflow,
+			steps: nextSteps,
+		})
 	}
 
 	const handleDeleteItem = (id: string) => {
-		updateSteps(steps.filter((s) => s.id !== id))
+		const nextSteps = workflow.steps.filter((step) => step.id !== id)
+
+		updateWorkflow({
+			...workflow,
+			steps: nextSteps,
+		})
 	}
 
-	const handleAddStepRow = (label: string) => {
-		const next: Step[] = [...steps, { id: `w${Date.now()}`, label }]
-		updateSteps(next)
+	const handleAddStepRow = (roleAStep: string, roleBStep: string) => {
+		const newStep: WorkflowStep = {
+			id: `w${Date.now()}`,
+			roleAStep,
+			roleBStep,
+		}
+
+		const nextSteps = [...workflow.steps, newStep]
+
+		updateWorkflow({
+			...workflow,
+			steps: nextSteps,
+		})
+
 		setIsAdding(false)
 	}
 
-	const renderWorkflowItem = () =>
-		steps.map((step, idx) => (
+	const renderWorkflowItems = () =>
+		workflow.steps.map((step, idx) => (
 			<WorkflowItem
 				key={step.id}
 				step={step}
 				index={idx}
-				isLast={idx === steps.length - 1}
+				isLast={idx === workflow.steps.length - 1}
 				onUpdate={handleUpdateItem}
 				onDelete={handleDeleteItem}
 			/>
@@ -42,7 +71,9 @@ export const WorkflowContent = () => {
 		if (isAdding) {
 			return (
 				<StepRowInput
-					stepNumber={steps.length + 1}
+					stepNumber={workflow.steps.length + 1}
+					roleAName={workflow.roleAName}
+					roleBName={workflow.roleBName}
 					onAdd={handleAddStepRow}
 					onCancel={() => setIsAdding(false)}
 				/>
@@ -63,7 +94,19 @@ export const WorkflowContent = () => {
 
 	return (
 		<div className='flex flex-col gap-1.5'>
-			{renderWorkflowItem()}
+			{workflow.steps.length > 0 && (
+				<div className='flex items-center gap-3 mb-1'>
+					<div className='w-6 shrink-0' />
+					<div className='flex-1 grid grid-cols-2 gap-2'>
+						<div className='text-xs font-semibold text-blue-600 dark:text-blue-400 px-3'>{workflow.roleAName}</div>
+						<div className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 px-3'>
+							{workflow.roleBName}
+						</div>
+					</div>
+					<div className='w-6 shrink-0' />
+				</div>
+			)}
+			{renderWorkflowItems()}
 			{maybeRenderAddStepRow()}
 		</div>
 	)

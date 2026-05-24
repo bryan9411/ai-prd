@@ -4,7 +4,7 @@ import cx from 'classnames'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useProjectContext } from '@/contexts/ProjectContext'
-import type { AISuggestion } from '@/types/project'
+import type { AISuggestion } from '@/lib/ai-schema'
 
 const impactStyle: Record<AISuggestion['impact'], string> = {
 	High: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900',
@@ -28,7 +28,7 @@ export const SuggestionContent = () => {
 			{
 				id: suggestionId,
 				label: suggestion.title,
-				priority: 'Medium',
+				priority: suggestion.impact,
 				done: false,
 				readonly: true,
 				suggestionId,

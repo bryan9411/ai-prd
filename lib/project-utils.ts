@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Task, Step, ProjectVersion, PRDContent, AIPhase, AISuggestion } from '@/types/project'
+import type { Task, WorkflowData, ProjectVersion } from '@/types/project'
+import type { PRDContent, AIPhase, AISuggestion } from '@/lib/ai-schema'
 
 type AIVersionData = {
 	prd?: PRDContent
@@ -46,7 +47,7 @@ export const generateProjectId = () => {
 export const buildVersion = (
 	idea: string,
 	tasks: Task[],
-	steps: Step[],
+	workflow: WorkflowData,
 	isOrigin = false,
 	aiData?: AIVersionData,
 ): ProjectVersion => {
@@ -59,7 +60,7 @@ export const buildVersion = (
 		isOrigin,
 		idea,
 		tasks,
-		steps,
+		workflow,
 		...(aiData?.prd !== undefined && { prd: aiData.prd }),
 		...(aiData?.phases !== undefined && { phases: aiData.phases }),
 		...(aiData?.suggestions !== undefined && { suggestions: aiData.suggestions }),
@@ -75,7 +76,7 @@ export const overwriteVersion = (
 	targetId: string,
 	idea: string,
 	tasks: Task[],
-	steps: Step[],
+	workflow: WorkflowData,
 	aiData?: AIVersionData,
 ): ProjectVersion[] => {
 	return versions.map((version) => {
@@ -85,7 +86,7 @@ export const overwriteVersion = (
 			...version,
 			idea,
 			tasks,
-			steps,
+			workflow,
 			timestamp: Date.now(),
 			...(aiData?.prd !== undefined && { prd: aiData.prd }),
 			...(aiData?.phases !== undefined && { phases: aiData.phases }),
@@ -118,8 +119,8 @@ export const pushVersion = (versions: ProjectVersion[], newVersion: ProjectVersi
 
 	// 重新標籤：版本 2, 版本 3
 	const relabeled = trimmed.map((value, i) => {
-    return { ...value, label: `版本 ${i + 2}` }
-  })
+		return { ...value, label: `版本 ${i + 2}` }
+	})
 
 	return origin ? [origin, ...relabeled] : relabeled
 }

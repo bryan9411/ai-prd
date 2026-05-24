@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, startTransition, type ReactNode } from 'react'
 import { loadProjectData, saveProjectData } from '@/store/project-store'
 import { buildVersion, pushVersion, overwriteVersion } from '@/lib/project-utils'
-import type { Task, Step, ProjectVersion, PRDContent, AIPhase, AISuggestion } from '@/types/project'
-import type { AIGenerateOutput } from '@/lib/ai-schema'
+import type { Task, WorkflowData, ProjectVersion } from '@/types/project'
+import type { AIGenerateOutput, PRDContent, AIPhase, AISuggestion } from '@/lib/ai-schema'
 
 export interface ProjectContextValue {
 	submitted: boolean
@@ -12,7 +12,7 @@ export interface ProjectContextValue {
 	loading: boolean
 	idea: string
 	tasks: Task[]
-	steps: Step[]
+	workflow: WorkflowData
 	prd: PRDContent | null
 	phases: AIPhase[]
 	suggestions: AISuggestion[]
@@ -30,7 +30,7 @@ export interface ProjectContextValue {
 	loadVersion: (versionId: string) => void
 	pinVersion: (versionId: string) => void
 	updateTasks: (tasks: Task[]) => void
-	updateSteps: (steps: Step[]) => void
+	updateWorkflow: (workflow: WorkflowData) => void
 	removeProject: () => void
 }
 
@@ -39,11 +39,13 @@ interface ProjectProviderProps {
 	children: ReactNode
 }
 
+const emptyWorkflow: WorkflowData = { roleAName: '', roleBName: '', steps: [] }
+
 interface ProjectState {
 	submitted: boolean
 	idea: string
 	tasks: Task[]
-	steps: Step[]
+	workflow: WorkflowData
 	prd: PRDContent | null
 	phases: AIPhase[]
 	suggestions: AISuggestion[]
@@ -59,7 +61,7 @@ const emptyProjectState: ProjectState = {
 	submitted: false,
 	idea: '',
 	tasks: [],
-	steps: [],
+	workflow: emptyWorkflow,
 	prd: null,
 	phases: [],
 	suggestions: [],
@@ -121,7 +123,7 @@ const onLoadProjectData = (projectId: string): ProjectState => {
 			submitted: true,
 			idea: activeVersion.idea,
 			tasks: activeVersion.tasks,
-			steps: activeVersion.steps,
+			workflow: activeVersion.workflow ?? emptyWorkflow,
 			prd: activeVersion.prd ?? null,
 			phases: activeVersion.phases ?? [],
 			suggestions: activeVersion.suggestions ?? [],
@@ -182,12 +184,17 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 				done: false,
 			}))
 
-			const steps: Step[] = output.steps.map((s, i) => ({
-				id: `s_${Date.now()}_${i}`,
-				label: s.label,
-			}))
+			const workflow: WorkflowData = {
+				roleAName: output.workflow.roleAName,
+				roleBName: output.workflow.roleBName,
+				steps: output.workflow.steps.map((s, i) => ({
+					id: `s_${Date.now()}_${i}`,
+					roleAStep: s.roleAStep,
+					roleBStep: s.roleBStep,
+				})),
+			}
 
-			const originVersion = buildVersion(projectState.idea, tasks, steps, true, {
+			const originVersion = buildVersion(projectState.idea, tasks, workflow, true, {
 				prd: output.prd,
 				phases: output.phases,
 				suggestions: output.suggestions,
@@ -201,7 +208,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 			setProjectState((prev) => ({
 				...prev,
 				tasks,
-				steps,
+				workflow,
 				prd: output.prd,
 				phases: output.phases,
 				suggestions: output.suggestions,
@@ -219,12 +226,12 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 	}, [projectState.idea, projectState.submitted, loading, projectId])
 
 	const saveVersion = useCallback(() => {
-		const { submitted, isDirty, idea, tasks, steps, prd, phases, suggestions } = projectState
+		const { submitted, isDirty, idea, tasks, workflow, prd, phases, suggestions } = projectState
 
 		if (!submitted || !isDirty) return
 
 		const data = loadProjectData(projectId) ?? { versions: [] }
-		const newVersion = buildVersion(idea, tasks, steps, false, { prd: prd ?? undefined, phases, suggestions })
+		const newVersion = buildVersion(idea, tasks, workflow, false, { prd: prd ?? undefined, phases, suggestions })
 		const nextVersions = pushVersion(data.versions, newVersion)
 
 		saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: data.pinnedVersionId })
@@ -244,7 +251,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 
 	const saveOverwrite = useCallback(
 		(versionId: string) => {
-			const { submitted, isDirty, idea, tasks, steps, versions, prd, phases, suggestions } = projectState
+			const { submitted, isDirty, idea, tasks, workflow, versions, prd, phases, suggestions } = projectState
 
 			if (!submitted || !isDirty) return
 
@@ -253,7 +260,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 			if (!target || target.isOrigin) return
 
 			const data = loadProjectData(projectId) ?? { versions: [] }
-			const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, steps, {
+			const nextVersions = overwriteVersion(data.versions, versionId, idea, tasks, workflow, {
 				prd: prd ?? undefined,
 				phases,
 				suggestions,
@@ -288,7 +295,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 				...prev,
 				idea: version.idea,
 				tasks: version.tasks,
-				steps: version.steps,
+				workflow: version.workflow ?? emptyWorkflow,
 				prd: version.prd ?? null,
 				phases: version.phases ?? [],
 				suggestions: version.suggestions ?? [],
@@ -310,7 +317,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 				...prev,
 				idea: version.idea,
 				tasks: version.tasks,
-				steps: version.steps,
+				workflow: version.workflow ?? emptyWorkflow,
 				prd: version.prd ?? null,
 				phases: version.phases ?? [],
 				suggestions: version.suggestions ?? [],
@@ -340,9 +347,9 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		})
 	}, [])
 
-	const updateSteps = useCallback((nextSteps: Step[]) => {
+	const updateWorkflow = useCallback((nextWorkflow: WorkflowData) => {
 		setProjectState((prev) => {
-			return { ...prev, steps: nextSteps, isDirty: true }
+			return { ...prev, workflow: nextWorkflow, isDirty: true }
 		})
 	}, [])
 
@@ -365,7 +372,7 @@ export const ProjectProvider = ({ projectId, children }: ProjectProviderProps) =
 		loadVersion,
 		pinVersion,
 		updateTasks,
-		updateSteps,
+		updateWorkflow,
 		removeProject,
 		...projectState,
 	}

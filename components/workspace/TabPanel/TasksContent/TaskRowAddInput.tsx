@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import type { Priority } from '@/components/workspace/TabPanel/TasksContent/types'
+import type { Priority } from '@/types/project'
 
 interface TaskRowAddInput {
 	onAdd: (label: string, priority: Priority) => void

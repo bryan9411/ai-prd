@@ -64,14 +64,18 @@ export interface AISuggestion {
 export interface AIGenerateOutput {
 	prd: PRDContent
 	tasks: { label: string; priority: 'High' | 'Medium' | 'Low' }[]
-	steps: { label: string }[]
+	workflow: {
+		roleAName: string
+		roleBName: string
+		steps: { roleAStep: string; roleBStep: string }[]
+	}
 	phases: AIPhase[]
 	suggestions: AISuggestion[]
 }
 
 export const AI_OUTPUT_SCHEMA = {
 	type: 'object',
-	required: ['prd', 'tasks', 'steps', 'phases', 'suggestions'],
+	required: ['prd', 'tasks', 'workflow', 'phases', 'suggestions'],
 	additionalProperties: false,
 	properties: {
 		prd: {
@@ -176,14 +180,24 @@ export const AI_OUTPUT_SCHEMA = {
 				},
 			},
 		},
-		steps: {
-			type: 'array',
-			items: {
-				type: 'object',
-				required: ['label'],
-				additionalProperties: false,
-				properties: {
-					label: { type: 'string' },
+		workflow: {
+			type: 'object',
+			required: ['roleAName', 'roleBName', 'steps'],
+			additionalProperties: false,
+			properties: {
+				roleAName: { type: 'string' },
+				roleBName: { type: 'string' },
+				steps: {
+					type: 'array',
+					items: {
+						type: 'object',
+						required: ['roleAStep', 'roleBStep'],
+						additionalProperties: false,
+						properties: {
+							roleAStep: { type: 'string' },
+							roleBStep: { type: 'string' },
+						},
+					},
 				},
 			},
 		},

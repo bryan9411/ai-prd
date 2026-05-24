@@ -80,7 +80,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 					key={item.label}
 					variant='ghost'
 					onClick={item.onClick}
-					className='w-full justify-start gap-2.5 px-2.5 h-8 text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5'
+					className='w-full justify-start gap-2.5 px-2.5 h-8 cursor-pointer text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5'
 				>
 					<Icon className='w-3.5 h-3.5 opacity-70' />
 					<span>{item.label}</span>
@@ -186,7 +186,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 						<span className='text-white text-[11px] font-black tracking-tight'>P</span>
 					</div>
 					<span className='text-sm font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight'>
-						PRD Studio
+						PRD 產生器
 					</span>
 				</div>
 
