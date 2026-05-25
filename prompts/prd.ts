@@ -87,6 +87,10 @@ prd：
       - 體驗功能
     - 不可全部同類型
     - 必須白話描述
+    - 每個功能包含：
+      - name
+      - description（30 字內白話描述）
+      - icon：必須是單一 emoji 字元（例如 📋 💬 👤 🔒 📊 💳 🔔 ⚙️），禁止使用文字、CSS class 名稱或任何非 emoji 內容
 
   systemModules：
     - 3–8 個模組
