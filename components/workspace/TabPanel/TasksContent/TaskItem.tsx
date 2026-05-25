@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Check, Pencil, X } from 'lucide-react'
-import { type Task, type Priority } from './types'
+import { type Task, type Priority } from '@/types/project'
 
 interface TaskItemProps {
 	task: Task
