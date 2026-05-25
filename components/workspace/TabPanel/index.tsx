@@ -10,7 +10,7 @@ import { SuggestionContent } from '@/components/workspace/TabPanel/SuggestionCon
 import { VersionDropdown } from '@/components/workspace/TabPanel/VersionDropdown'
 import { SaveButton } from '@/components/workspace/TabPanel/SaveButton'
 import { FileText, CheckSquare, RefreshCw, GitBranch, Lightbulb, type LucideIcon } from 'lucide-react'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 import { EmptyHint } from '@/components/EmptyHint'
 
 type TabId = 'prd' | 'tasks' | 'workflow' | 'phases' | 'suggestion'
@@ -65,9 +65,11 @@ const EmptyState = ({ currentTab, error, onDismiss }: EmptyStateProps) => {
 export const TabPanel = () => {
 	const [activeTab, setActiveTab] = useState<TabId>('prd')
 
-	const { submitted, generateError, clearGenerateError } = useProjectContext()
+	const submitted = useProjectStore((state) => state.submitted)
+	const generateError = useProjectStore((state) => state.generateError)
+	const clearGenerateError = useProjectStore((state) => state.clearGenerateError)
 
-	const currentTab = tabs.find((t) => t.id === activeTab)!
+	const currentTab = tabs.find((tab) => tab.id === activeTab)!
 
 	const renderTabs = () =>
 		tabs.map((tab) => {

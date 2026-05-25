@@ -1,14 +1,17 @@
 'use client'
 
 import { BarChart2 } from 'lucide-react'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 import { Progress } from '@/components/ui/progress'
 import { formatRelativeTime } from '@/lib/dayjs'
 import { EmptyHint } from '@/components/EmptyHint'
 import { ProjectVersion } from '@/types/project'
 
 export const RightPanel = () => {
-	const { submitted, tasks, versions, pinnedVersionId } = useProjectContext()
+	const submitted = useProjectStore((state) => state.submitted)
+	const tasks = useProjectStore((state) => state.tasks)
+	const versions = useProjectStore((state) => state.versions)
+	const pinnedVersionId = useProjectStore((state) => state.pinnedVersionId)
 
 	const totalTasks = tasks.length
 	const completedTasks = tasks.filter((t) => t.done).length

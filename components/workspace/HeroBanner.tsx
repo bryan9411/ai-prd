@@ -1,12 +1,12 @@
 import cx from 'classnames'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 
 interface HeroBannerProps {
 	projectName: string
 }
 
 export const HeroBanner = ({ projectName }: HeroBannerProps) => {
-	const { tasks } = useProjectContext()
+	const tasks = useProjectStore((state) => state.tasks)
 
 	const isDoneBadge = tasks.length > 0 && tasks.every((task) => task.done)
 	const isNotStartYetBadge = tasks.length === 0

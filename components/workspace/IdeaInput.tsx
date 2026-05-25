@@ -2,10 +2,14 @@
 
 import { useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 
 export const IdeaInput = () => {
-	const { idea, loading, submitted, setIdea, generate } = useProjectContext()
+	const idea = useProjectStore((state) => state.idea)
+	const loading = useProjectStore((state) => state.loading)
+	const submitted = useProjectStore((state) => state.submitted)
+	const setIdea = useProjectStore((state) => state.setIdea)
+	const generate = useProjectStore((state) => state.generate)
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 

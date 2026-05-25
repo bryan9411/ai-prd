@@ -5,8 +5,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { TaskItem } from '@/components/workspace/TabPanel/TasksContent/TaskItem'
 import { TaskRowAddInput } from '@/components/workspace/TabPanel/TasksContent/TaskRowAddInput'
-import { useProjectContext } from '@/contexts/ProjectContext'
-import { type Task, type Priority } from './types'
+import { useProjectStore } from '@/store/useProjectStore'
+import { type Task, type Priority } from '@/types/project'
 
 const PRIORITY_ORDER: Priority[] = ['High', 'Medium', 'Low']
 
@@ -25,7 +25,8 @@ const priorityDotStyle: Record<Priority, string> = {
 export const TasksContent = () => {
 	const [adding, setAdding] = useState(false)
 
-	const { tasks, updateTasks } = useProjectContext()
+	const tasks = useProjectStore((state) => state.tasks)
+	const updateTasks = useProjectStore((state) => state.updateTasks)
 
 	const handleToggle = (id: string) => {
 		const next = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
@@ -81,6 +82,12 @@ export const TasksContent = () => {
 		))
 	}
 
+	const maybeRenderAddInput = () => {
+		if (adding) {
+			return <TaskRowAddInput onAdd={handleAdd} onCancel={() => setAdding(false)} />
+		}
+	}
+
 	const maybeRenderEmptyState = () => {
 		if (tasks.length === 0 && !adding) {
 			return (
@@ -98,7 +105,7 @@ export const TasksContent = () => {
 		<div>
 			{renderGroups()}
 			{maybeRenderEmptyState()}
-			{adding && <TaskRowAddInput onAdd={handleAdd} onCancel={() => setAdding(false)} />}
+			{maybeRenderAddInput()}
 			<div className='mt-3 flex justify-end'>
 				<Button
 					variant='ghost'

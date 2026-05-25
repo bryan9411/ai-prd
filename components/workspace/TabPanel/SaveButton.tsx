@@ -4,13 +4,18 @@ import cx from 'classnames'
 import { useState } from 'react'
 import { Save, Check, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 
 export const SaveButton = () => {
 	const [menuOpen, setMenuOpen] = useState(false)
 
-	const { submitted, isDirty, isSaveSuccess, versions, activeVersionId, saveVersion, saveOverwrite } =
-		useProjectContext()
+	const submitted = useProjectStore((state) => state.submitted)
+	const isDirty = useProjectStore((state) => state.isDirty)
+	const isSaveSuccess = useProjectStore((state) => state.isSaveSuccess)
+	const versions = useProjectStore((state) => state.versions)
+	const activeVersionId = useProjectStore((state) => state.activeVersionId)
+	const saveVersion = useProjectStore((state) => state.saveVersion)
+	const saveOverwrite = useProjectStore((state) => state.saveOverwrite)
 
 	if (!submitted) return null
 

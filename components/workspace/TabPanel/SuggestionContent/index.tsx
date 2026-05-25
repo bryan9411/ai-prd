@@ -3,7 +3,7 @@
 import cx from 'classnames'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 import type { AISuggestion } from '@/lib/ai-schema'
 
 const impactStyle: Record<AISuggestion['impact'], string> = {
@@ -16,7 +16,9 @@ const categoryStyle =
 	'text-[10px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-900 px-1.5 py-0.5 rounded'
 
 export const SuggestionContent = () => {
-	const { tasks, updateTasks, suggestions } = useProjectContext()
+	const tasks = useProjectStore((state) => state.tasks)
+	const updateTasks = useProjectStore((state) => state.updateTasks)
+	const suggestions = useProjectStore((state) => state.suggestions)
 
 	const getSuggestionId = (index: number) => `ai_s_${index}`
 

@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { WorkflowItem } from '@/components/workspace/TabPanel/WorkflowContent/WorkflowItem'
 import { StepRowInput } from '@/components/workspace/TabPanel/WorkflowContent/StepRowInput'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 import { type WorkflowStep } from '@/types/project'
 
 export const WorkflowContent = () => {
-	const { workflow, updateWorkflow } = useProjectContext()
 	const [isAdding, setIsAdding] = useState(false)
+
+	const workflow = useProjectStore((state) => state.workflow)
+	const updateWorkflow = useProjectStore((state) => state.updateWorkflow)
 
 	const handleUpdateItem = (id: string, field: 'roleAStep' | 'roleBStep', value: string) => {
 		const nextSteps = workflow.steps.map((step) => {
@@ -55,6 +57,21 @@ export const WorkflowContent = () => {
 		setIsAdding(false)
 	}
 
+	const maybeRenderRoleHeaders = () => {
+		if (workflow.steps.length === 0) return
+
+		return (
+			<div className='flex items-center gap-3 mb-1'>
+				<div className='w-6 shrink-0' />
+				<div className='flex-1 grid grid-cols-2 gap-2'>
+					<div className='text-xs font-semibold text-blue-600 dark:text-blue-400 px-3'>{workflow.roleAName}</div>
+					<div className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 px-3'>{workflow.roleBName}</div>
+				</div>
+				<div className='w-6 shrink-0' />
+			</div>
+		)
+	}
+
 	const renderWorkflowItems = () =>
 		workflow.steps.map((step, idx) => (
 			<WorkflowItem
@@ -94,18 +111,7 @@ export const WorkflowContent = () => {
 
 	return (
 		<div className='flex flex-col gap-1.5'>
-			{workflow.steps.length > 0 && (
-				<div className='flex items-center gap-3 mb-1'>
-					<div className='w-6 shrink-0' />
-					<div className='flex-1 grid grid-cols-2 gap-2'>
-						<div className='text-xs font-semibold text-blue-600 dark:text-blue-400 px-3'>{workflow.roleAName}</div>
-						<div className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 px-3'>
-							{workflow.roleBName}
-						</div>
-					</div>
-					<div className='w-6 shrink-0' />
-				</div>
-			)}
+			{maybeRenderRoleHeaders()}
 			{renderWorkflowItems()}
 			{maybeRenderAddStepRow()}
 		</div>

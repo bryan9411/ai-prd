@@ -1,7 +1,7 @@
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 
 export const PhasesContent = () => {
-	const { phases } = useProjectContext()
+	const phases = useProjectStore((state) => state.phases)
 
 	const renderDeliverables = (deliverables: string[]) => {
 		return deliverables.map((item, i) => (
@@ -27,7 +27,6 @@ export const PhasesContent = () => {
 				key={phase.name}
 				className='rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden'
 			>
-				{/* 階段標題列 */}
 				<div className='flex items-center gap-3 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60'>
 					<div className='w-6 h-6 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 flex items-center justify-center text-[10px] font-bold shrink-0'>
 						{index + 1}
@@ -38,7 +37,6 @@ export const PhasesContent = () => {
 					</div>
 				</div>
 
-				{/* 階段目標 */}
 				<div className='px-4 pt-3 pb-1'>
 					<p className='text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-1'>
 						階段目標
@@ -46,7 +44,6 @@ export const PhasesContent = () => {
 					<p className='text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed'>{phase.goal}</p>
 				</div>
 
-				{/* 交付物 / 成功指標 */}
 				<div className='grid grid-cols-2 divide-x divide-neutral-100 dark:divide-neutral-800 px-0 py-3'>
 					<div className='px-4 space-y-2'>
 						<p className='text-[10px] font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2'>

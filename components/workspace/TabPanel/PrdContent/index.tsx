@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 
 const SectionTitle = ({ children }: { children: ReactNode }) => {
 	return (
@@ -10,7 +10,7 @@ const SectionTitle = ({ children }: { children: ReactNode }) => {
 }
 
 export const PrdContent = () => {
-	const { prd } = useProjectContext()
+	const prd = useProjectStore((state) => state.prd)
 
 	if (!prd) return null
 

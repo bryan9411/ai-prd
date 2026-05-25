@@ -3,7 +3,7 @@
 import cx from 'classnames'
 import { useState } from 'react'
 import { ChevronDown, Pin, PinOff } from 'lucide-react'
-import { useProjectContext } from '@/contexts/ProjectContext'
+import { useProjectStore } from '@/store/useProjectStore'
 import { ProjectVersion } from '@/types/project'
 import { formatDateTime } from '@/lib/dayjs'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -13,8 +13,14 @@ export const VersionDropdown = () => {
 	const [menuOpen, setMenuOpen] = useState(false)
 
 	const { confirm, ConfirmModal } = useConfirm()
-	const { submitted, isDirty, versions, activeVersionId, pinnedVersionId, loadVersion, pinVersion } =
-		useProjectContext()
+
+	const submitted = useProjectStore((state) => state.submitted)
+	const isDirty = useProjectStore((state) => state.isDirty)
+	const versions = useProjectStore((state) => state.versions)
+	const activeVersionId = useProjectStore((state) => state.activeVersionId)
+	const pinnedVersionId = useProjectStore((state) => state.pinnedVersionId)
+	const loadVersion = useProjectStore((state) => state.loadVersion)
+	const pinVersion = useProjectStore((state) => state.pinVersion)
 
 	if (!submitted || versions.length === 0) return null
 
