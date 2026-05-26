@@ -204,7 +204,6 @@ export const AI_OUTPUT_SCHEMA = {
 		phases: {
 			type: 'array',
 			minItems: 3,
-			maxItems: 3,
 			items: {
 				type: 'object',
 				required: ['name', 'timeframe', 'goal', 'deliverables', 'successMetrics'],

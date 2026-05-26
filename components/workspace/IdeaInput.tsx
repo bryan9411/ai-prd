@@ -69,7 +69,7 @@ export const IdeaInput = () => {
 				value={idea}
 				onChange={(e) => setIdea(e.target.value)}
 				onKeyDown={handleKeyDown}
-				placeholder='例如：我要做一個健身 App，支援課表安排、飲食紀錄…'
+				placeholder='例如：我要做一個健身 App，或：我想開一間手沖咖啡廳…'
 				rows={1}
 				disabled={submitted}
 				className='
