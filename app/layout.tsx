@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-	title: 'AI PRD System',
-	description: 'AI-powered Product Requirements Document Generator',
+	title: 'PRD 產生器',
+	description: '輸入你的想法，AI 會幫你產出完整的產品需求文件（PRD）、任務清單與工作流程。',
 }
 
 export default function RootLayout({

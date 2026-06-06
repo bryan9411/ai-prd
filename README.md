@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI PRD 產生器
 
-## Getting Started
+> 輸入一句產品概念，AI 自動生成完整的產品需求文件（PRD）
 
-First, run the development server:
+**[➜ 線上 Demo：AI PRD 產生器](https://aiprd-studio.vercel.app/)**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+![screenshot](public/screencapture.png)
+
+## 功能介紹
+
+- 輸入產品想法，自動生成 PRD、任務清單、開發流程、階段規劃、策略建議
+- 多專案管理，支援版本歷史與釘選
+- OpenAI API Key 由使用者自行輸入，不經過後端，資料存在本機
+- 深色 / 淺色模式切換
+
+## 使用技術
+
+| 類別     | 使用技術                                      |
+| -------- | --------------------------------------------- |
+| 框架     | Next.js 15 App Router                         |
+| UI       | React 19、Tailwind CSS v4、shadcn/ui          |
+| 狀態管理 | Zustand                                       |
+| AI       | OpenAI SDK（Structured Output + JSON Schema） |
+| 資料儲存 | localStorage                                  |
+| 語言     | TypeScript                                    |
+
+
+## 資料夾結構
+
+```
+app/api/generate/      # AI 生成 API Route
+components/workspace/  # 主要功能 component
+prompts/               # AI 系統 Prompt
+store/                 # Zustand 狀態管理
+types/                 # TypeScript 型別定義
+lib/                   # 相關工具與 AI Schema
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 本地啟動
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+啟動後，點擊設定，輸入你的 OpenAI API Key 即可使用。
 
-## Learn More
+> API Key 儲存在瀏覽器 localStorage，不會傳送至任何第三方伺服器。
 
-To learn more about Next.js, take a look at the following resources:
+## Todo
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] 後端資料庫儲存，預計使用 supabase
+- [ ] 登入 / 登出 / 註冊 功能
+- [ ] 匯出為 Markdown / Notion
