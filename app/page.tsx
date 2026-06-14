@@ -9,6 +9,7 @@ import { IdeaInput } from '@/components/workspace/IdeaInput'
 import { TabPanel } from '@/components/workspace/TabPanel'
 import { RightPanel } from '@/components/layout/RightPanel'
 import { EmptyHint } from '@/components/EmptyHint'
+import { SimilarProjectDialog } from '@/components/SimilarProjectDialog'
 import { useProjectStore } from '@/store/useProjectStore'
 import { loadProjects, saveProjects } from '@/lib/project-storage'
 import { pickNextColor, generateProjectId } from '@/lib/project-utils'
@@ -19,6 +20,10 @@ export default function Home() {
 	const [projects, setProjects] = useState<ProjectMeta[]>([])
 	const [activeProjectId, setActiveProjectId] = useState<string>('')
 
+	const similarProject = useProjectStore((state) => state.similarProject)
+	const loadSimilarProject = useProjectStore((state) => state.loadSimilarProject)
+	const forceGenerate = useProjectStore((state) => state.forceGenerate)
+
 	const currentProject = projects.find((project) => project.id === activeProjectId) ?? projects[0]
 
 	const handleToggleDarkModel = () => setIsDark((prev) => !prev)
@@ -26,13 +31,14 @@ export default function Home() {
 	const handleAddProject = (name: string) => {
 		if (!name.trim()) return
 
+		const current = loadProjects()
 		const newProject: ProjectMeta = {
 			id: generateProjectId(),
 			name: name.trim(),
-			color: pickNextColor(projects),
+			color: pickNextColor(current),
 		}
 
-		const next = [...projects, newProject]
+		const next = [...current, newProject]
 
 		setProjects(next)
 		saveProjects(next)
@@ -41,7 +47,8 @@ export default function Home() {
 
 	const handleDeleteProject = (id: string) => {
 		localStorage.removeItem(`prd_project_${id}`)
-		const next = projects.filter((p) => p.id !== id)
+		const current = loadProjects()
+		const next = current.filter((p) => p.id !== id)
 		saveProjects(next)
 		setProjects(next)
 
@@ -97,6 +104,12 @@ export default function Home() {
 				)}
 			</main>
 			<RightPanel />
+			<SimilarProjectDialog
+				open={!!similarProject}
+				projectName={similarProject?.meta.name ?? ''}
+				onUseCached={() => loadSimilarProject()}
+				onRegenerate={forceGenerate}
+			/>
 		</div>
 	)
 }

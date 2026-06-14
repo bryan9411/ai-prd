@@ -8,8 +8,10 @@ export const IdeaInput = () => {
 	const idea = useProjectStore((state) => state.idea)
 	const loading = useProjectStore((state) => state.loading)
 	const submitted = useProjectStore((state) => state.submitted)
+	const validationError = useProjectStore((state) => state.validationError)
 	const setIdea = useProjectStore((state) => state.setIdea)
 	const generate = useProjectStore((state) => state.generate)
+	const clearValidationError = useProjectStore((state) => state.clearValidationError)
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -20,6 +22,11 @@ export const IdeaInput = () => {
 			e.preventDefault()
 			generate()
 		}
+	}
+
+	const handleTextAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setIdea(e.target.value)
+		if (validationError) clearValidationError()
 	}
 
 	const renderBtnText = () => {
@@ -46,6 +53,17 @@ export const IdeaInput = () => {
 		}
 	}
 
+	const maybeRenderValidationError = () => {
+		if (validationError) {
+			return (
+				<p className='mt-2 text-xs text-red-500 dark:text-red-400 flex items-center gap-1.5'>
+					<span>✕</span>
+					<span>{validationError}</span>
+				</p>
+			)
+		}
+	}
+
 	// 自動調整高度
 	useEffect(() => {
 		const el = textareaRef.current
@@ -67,7 +85,7 @@ export const IdeaInput = () => {
 			<textarea
 				ref={textareaRef}
 				value={idea}
-				onChange={(e) => setIdea(e.target.value)}
+				onChange={handleTextAreaChange}
 				onKeyDown={handleKeyDown}
 				placeholder='例如：我要做一個健身 App，或：我想開一間手沖咖啡廳…'
 				rows={1}
@@ -94,7 +112,8 @@ export const IdeaInput = () => {
 					{renderBtnText()}
 				</Button>
 			</div>
-			{maybeRenderInputPreview()}
+			{maybeRenderValidationError()}
+			{!validationError && maybeRenderInputPreview()}
 		</section>
 	)
 }

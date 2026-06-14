@@ -124,3 +124,28 @@ export const pushVersion = (versions: ProjectVersion[], newVersion: ProjectVersi
 
 	return origin ? [origin, ...relabeled] : relabeled
 }
+
+/**
+ * 計算兩個向量的餘弦相似度，範圍 -1 ~ 1，越接近 1 表示越相似。
+ * 用於比對兩個 embedding 向量的語意距離。
+ */
+export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
+	if (vecA.length !== vecB.length || vecA.length === 0) return 0
+
+	let dotProduct = 0
+	let sumOfSquaresA = 0
+	let sumOfSquaresB = 0
+
+	for (let i = 0; i < vecA.length; i++) {
+		dotProduct += vecA[i] * vecB[i]
+		sumOfSquaresA += vecA[i] * vecA[i]
+		sumOfSquaresB += vecB[i] * vecB[i]
+	}
+
+	const magnitudeA = Math.sqrt(sumOfSquaresA)
+	const magnitudeB = Math.sqrt(sumOfSquaresB)
+
+	if (magnitudeA === 0 || magnitudeB === 0) return 0
+
+	return dotProduct / (magnitudeA * magnitudeB)
+}

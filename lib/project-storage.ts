@@ -47,3 +47,12 @@ export const saveProjectData = (projectId: string, data: ProjectData): void => {
 	if (typeof window === 'undefined') return
 	localStorage.setItem(projectKey(projectId), JSON.stringify(data))
 }
+
+export const updateProjectMeta = (projectId: string, patch: Partial<Omit<ProjectMeta, 'id'>>): void => {
+	if (typeof window === 'undefined') return
+
+	const projects = loadProjects()
+	const updated = projects.map((p) => (p.id === projectId ? { ...p, ...patch } : p))
+
+	saveProjects(updated)
+}

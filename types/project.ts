@@ -27,6 +27,7 @@ export interface ProjectMeta {
 	id: string
 	name: string
 	color: string
+	embedding?: number[]
 }
 
 export interface ProjectVersion {
