@@ -1,6 +1,7 @@
 import type { ProjectMeta, ProjectData } from '@/types/project'
 
 const PROJECTS_KEY = 'prd_projects'
+const API_KEY_KEY = 'openai_api_key'
 
 export const loadProjects = (): ProjectMeta[] => {
 	if (typeof window === 'undefined') {
@@ -48,6 +49,11 @@ export const saveProjectData = (projectId: string, data: ProjectData): void => {
 	localStorage.setItem(projectKey(projectId), JSON.stringify(data))
 }
 
+export const deleteProjectData = (projectId: string): void => {
+	if (typeof window === 'undefined') return
+	localStorage.removeItem(projectKey(projectId))
+}
+
 export const updateProjectMeta = (projectId: string, patch: Partial<Omit<ProjectMeta, 'id'>>): void => {
 	if (typeof window === 'undefined') return
 
@@ -55,4 +61,19 @@ export const updateProjectMeta = (projectId: string, patch: Partial<Omit<Project
 	const updated = projects.map((p) => (p.id === projectId ? { ...p, ...patch } : p))
 
 	saveProjects(updated)
+}
+
+export const getApiKey = (): string => {
+	if (typeof window === 'undefined') return ''
+	return localStorage.getItem(API_KEY_KEY) ?? ''
+}
+
+export const saveApiKey = (key: string): void => {
+	if (typeof window === 'undefined') return
+	localStorage.setItem(API_KEY_KEY, key)
+}
+
+export const clearApiKey = (): void => {
+	if (typeof window === 'undefined') return
+	localStorage.removeItem(API_KEY_KEY)
 }

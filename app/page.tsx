@@ -11,7 +11,7 @@ import { RightPanel } from '@/components/layout/RightPanel'
 import { EmptyHint } from '@/components/EmptyHint'
 import { SimilarProjectDialog } from '@/components/SimilarProjectDialog'
 import { useProjectStore } from '@/store/useProjectStore'
-import { loadProjects, saveProjects } from '@/lib/project-storage'
+import { loadProjects, saveProjects, deleteProjectData } from '@/lib/project-storage'
 import { pickNextColor, generateProjectId } from '@/lib/project-utils'
 import type { ProjectMeta } from '@/types/project'
 
@@ -46,15 +46,34 @@ export default function Home() {
 	}
 
 	const handleDeleteProject = (id: string) => {
-		localStorage.removeItem(`prd_project_${id}`)
+		deleteProjectData(id)
 		const current = loadProjects()
 		const next = current.filter((p) => p.id !== id)
+
 		saveProjects(next)
 		setProjects(next)
 
 		if (id === activeProjectId) {
 			setActiveProjectId(next.length > 0 ? next[0].id : '')
 		}
+	}
+
+	const maybeRenderProjectInfo = () => {
+		if (projects.length === 0) {
+			return (
+				<div className='flex flex-col flex-1 items-center justify-center'>
+					<EmptyHint icon={Layers} title='尚未建立任何專案' description='從左側新增第一個專案，開始建立 PRD' />
+				</div>
+			)
+		}
+
+		return (
+			<div className='flex flex-col flex-1 overflow-y-auto px-6 py-6 gap-5'>
+				<HeroBanner projectName={currentProject?.name ?? ''} />
+				<IdeaInput />
+				<TabPanel />
+			</div>
+		)
 	}
 
 	useEffect(() => {
@@ -91,17 +110,7 @@ export default function Home() {
 			/>
 			<main className='flex flex-col flex-1 overflow-hidden'>
 				<Topbar projectName={currentProject?.name ?? ''} isDark={isDark} onToggleDark={handleToggleDarkModel} />
-				{projects.length === 0 ? (
-					<div className='flex flex-col flex-1 items-center justify-center'>
-						<EmptyHint icon={Layers} title='尚未建立任何專案' description='從左側新增第一個專案，開始建立 PRD' />
-					</div>
-				) : (
-					<div className='flex flex-col flex-1 overflow-y-auto px-6 py-6 gap-5'>
-						<HeroBanner projectName={currentProject?.name ?? ''} />
-						<IdeaInput />
-						<TabPanel />
-					</div>
-				)}
+				{maybeRenderProjectInfo()}
 			</main>
 			<RightPanel />
 			<SimilarProjectDialog
