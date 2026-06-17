@@ -2,13 +2,14 @@
 
 import cx from 'classnames'
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
-import { LayoutDashboard, Settings, X, Plus, FolderOpen, LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Settings, X, Plus, FolderOpen, LucideIcon, LogIn, LogOut } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useSettings } from '@/hooks/useSettings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { EmptyHint } from '@/components/EmptyHint'
+import { AuthDialog } from '@/components/auth/AuthDialog'
 import type { ProjectMeta } from '@/types/project'
 
 type NavItem = {
@@ -26,6 +27,8 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject, onDeleteProject }: SidebarProps) => {
+	const [user, setUser] = useState<{ email: string } | null>(null)
+	const [isAuthOpen, setIsAuthOpen] = useState(false)
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 	const [isAdding, setIsAdding] = useState(false)
 	const [newName, setNewName] = useState('')
@@ -163,6 +166,44 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 		}
 	}
 
+	const maybeRenderUserInfo = () => {
+		if (!user) {
+			return (
+				<Button
+					variant='ghost'
+					onClick={() => setIsAuthOpen(true)}
+					className='w-full justify-start gap-2.5 px-2.5 h-9 text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5 cursor-pointer font-medium'
+				>
+					<LogIn className='w-4 h-4 opacity-70' />
+					<span>登入</span>
+				</Button>
+			)
+		}
+
+		return (
+			<div className='flex flex-col gap-2'>
+				<div className='flex items-center gap-2.5 px-1 py-0.5'>
+					<div className='w-6 h-6 rounded-full bg-[#0DAABA]/15 dark:bg-[#0DAABA]/20 flex items-center justify-center text-[10px] font-bold text-[#0A8E9C] dark:text-[#2DD4E4] shrink-0'>
+						{user.email[0].toUpperCase()}
+					</div>
+					<div className='min-w-0 flex-1'>
+						<p className='text-xs font-medium text-stone-750 dark:text-neutral-300 truncate' title={user.email}>
+							{user.email}
+						</p>
+					</div>
+				</div>
+				<Button
+					variant='ghost'
+					onClick={() => setUser(null)}
+					className='w-full justify-start gap-2.5 px-2 h-8 text-xs text-red-500 hover:text-red-655 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer font-medium'
+				>
+					<LogOut className='w-3.5 h-3.5 opacity-70' />
+					<span>登出</span>
+				</Button>
+			</div>
+		)
+	}
+
 	useEffect(() => {
 		if (isAdding) {
 			inputRef.current?.focus()
@@ -179,6 +220,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 				onSave={saveApiKey}
 				onClear={clearApiKey}
 			/>
+			<AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} onSuccess={(email) => setUser({ email })} />
 			<aside
 				className='
 			  flex flex-col w-56 shrink-0 h-full
@@ -220,16 +262,9 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 					</div>
 				</div>
 
-				{/* ── 使用者資訊 ── */}
+				{/* ── 使用者資訊與驗證 ── */}
 				<div className='px-3 py-3 border-t border-stone-200 dark:border-[#2A2825] shrink-0'>
-					<div className='flex items-center gap-2.5'>
-						<div className='w-6 h-6 rounded-full bg-[#0DAABA]/15 dark:bg-[#0DAABA]/20 flex items-center justify-center text-[10px] font-bold text-[#0A8E9C] dark:text-[#2DD4E4] shrink-0'>
-							B
-						</div>
-						<div className='min-w-0 flex-1'>
-							<p className='text-xs font-medium text-stone-700 dark:text-neutral-300 truncate'>Bryan Wang</p>
-						</div>
-					</div>
+					{maybeRenderUserInfo()}
 				</div>
 			</aside>
 		</>

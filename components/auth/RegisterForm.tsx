@@ -1,0 +1,120 @@
+'use client'
+
+import cx from 'classnames'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Loader2 } from 'lucide-react'
+
+interface RegisterFormProps {
+	onSwitchToLogin: () => void
+	onSuccess: (email: string) => void
+}
+
+export const RegisterForm = ({ onSwitchToLogin, onSuccess }: RegisterFormProps) => {
+	const [email, setEmail] = useState('')
+	const [password, setPassword] = useState('')
+	const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+	const [isLoading, setIsLoading] = useState(false)
+
+	const validate = () => {
+		const newErrors: { email?: string; password?: string } = {}
+
+		if (!email.trim()) {
+			newErrors.email = '帳號為必填欄位'
+		} else if (!/\S+@\S+\.\S+/.test(email)) {
+			newErrors.email = '請輸入有效的電子郵件格式'
+		}
+
+		if (!password) {
+			newErrors.password = '密碼為必填欄位'
+		} else if (password.length < 6) {
+			newErrors.password = '密碼長度必須至少為 6 位字元'
+		}
+
+		setErrors(newErrors)
+		return Object.keys(newErrors).length === 0
+	}
+
+	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setEmail(e.target.value)
+
+		if (errors.email) {
+			setErrors((prev) => ({ ...prev, email: undefined }))
+		}
+	}
+
+	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setPassword(e.target.value)
+
+		if (errors.password) {
+			setErrors((prev) => ({ ...prev, password: undefined }))
+		}
+	}
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!validate()) return
+
+		setIsLoading(true)
+		onSuccess(email.trim())
+	}
+
+	const maybeRenderLoaderIcon = () => {
+		if (isLoading) {
+			return <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+		}
+
+		return '註冊'
+	}
+
+	return (
+		<form onSubmit={handleSubmit} className='flex flex-col gap-4'>
+			<div className='flex flex-col gap-1.5'>
+				<label className='text-xs font-medium text-stone-600 dark:text-neutral-400'>帳號</label>
+				<Input
+					type='text'
+					placeholder='name@example.com'
+					value={email}
+					onChange={handleEmailChange}
+					disabled={isLoading}
+					className={cx({ 'border-red-500 focus-visible:ring-red-500': errors.email })}
+				/>
+				{errors.email && <span className='text-[11px] text-red-500 font-medium'>{errors.email}</span>}
+			</div>
+
+			<div className='flex flex-col gap-1.5'>
+				<label className='text-xs font-medium text-stone-600 dark:text-neutral-400'>密碼</label>
+				<Input
+					type='password'
+					placeholder='至少 6 位字元'
+					value={password}
+					onChange={handlePasswordChange}
+					disabled={isLoading}
+					className={cx({ 'border-red-500 focus-visible:ring-red-500': errors.password })}
+				/>
+				{errors.password && <span className='text-[11px] text-red-500 font-medium'>{errors.password}</span>}
+			</div>
+
+			<Button
+				type='submit'
+				disabled={isLoading}
+				className='w-full mt-2 cursor-pointer bg-[#0DAABA] hover:bg-[#0DAABA]/90 text-white'
+			>
+				{maybeRenderLoaderIcon()}
+			</Button>
+
+			<div className='text-center text-xs text-stone-500 dark:text-neutral-500 mt-2'>
+				已有帳號？{' '}
+				<button
+					type='button'
+					onClick={onSwitchToLogin}
+					disabled={isLoading}
+					className='text-[#0DAABA] hover:underline font-semibold cursor-pointer disabled:opacity-50'
+				>
+					返回登入
+				</button>
+			</div>
+		</form>
+	)
+}
