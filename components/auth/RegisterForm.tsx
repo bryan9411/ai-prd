@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface RegisterFormProps {
 	onSwitchToLogin: () => void
@@ -57,6 +58,20 @@ export const RegisterForm = ({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
 		if (!validate()) return
 
 		setIsLoading(true)
+		setErrors({})
+
+		const supabase = createClient()
+		const { error } = await supabase.auth.signUp({
+			email: email.trim(),
+			password,
+		})
+
+		if (error) {
+			setErrors({ email: error.message })
+			setIsLoading(false)
+			return
+		}
+
 		onSuccess(email.trim())
 	}
 

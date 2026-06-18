@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-react'
 import cx from 'classnames'
+import { createClient } from '@/lib/supabase/client'
 
 interface LoginFormProps {
 	onSwitchToRegister: () => void
@@ -55,6 +56,20 @@ export const LoginForm = ({ onSwitchToRegister, onSuccess }: LoginFormProps) => 
 		if (!validate()) return
 
 		setIsLoading(true)
+		setErrors({})
+
+		const supabase = createClient()
+		const { error } = await supabase.auth.signInWithPassword({
+			email: email.trim(),
+			password,
+		})
+
+		if (error) {
+			setErrors({ email: error.message })
+			setIsLoading(false)
+			return
+		}
+
 		onSuccess(email.trim())
 	}
 

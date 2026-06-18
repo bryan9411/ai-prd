@@ -8,11 +8,26 @@ import { RegisterForm } from '@/components/auth/RegisterForm'
 
 export default function LoginPage() {
 	const [mode, setMode] = useState<'login' | 'register'>('login')
+	const [message, setMessage] = useState<string | null>(null)
 	const router = useRouter()
 
 	const handleSuccess = (email: string) => {
-		// TODO: 串接 Supabase Auth
-		router.push('/')
+		if (mode === 'register') {
+			setMessage('註冊成功！若有啟用信箱驗證，請至信箱收信啟用帳號後登入。')
+			setMode('login')
+		} else {
+			router.push('/')
+		}
+	}
+
+	const maybeRenderMessage = () => {
+		if (message) {
+			return (
+				<div className='mb-4 rounded-lg bg-emerald-500/10 p-3 text-xs font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-center animate-fade-in'>
+					{message}
+				</div>
+			)
+		}
 	}
 
 	const renderMode = () => {
@@ -42,6 +57,7 @@ export default function LoginPage() {
 					<h2 className='mb-5 text-center text-base font-semibold text-card-foreground'>
 						{mode === 'login' ? '會員登入' : '註冊新帳號'}
 					</h2>
+					{maybeRenderMessage()}
 					{renderMode()}
 				</div>
 			</div>

@@ -15,6 +15,8 @@ import { loadProjects, saveProjects, deleteProjectData } from '@/lib/project-sto
 import { pickNextColor, generateProjectId } from '@/lib/project-utils'
 import type { ProjectMeta } from '@/types/project'
 
+export const dynamic = 'force-dynamic'
+
 export default function Home() {
 	const [isDark, setIsDark] = useState(false)
 	const [projects, setProjects] = useState<ProjectMeta[]>([])
