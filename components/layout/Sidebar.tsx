@@ -3,13 +3,13 @@
 import cx from 'classnames'
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { LayoutDashboard, Settings, X, Plus, FolderOpen, LucideIcon, LogIn, LogOut } from 'lucide-react'
+import Link from 'next/link'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useSettings } from '@/hooks/useSettings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { EmptyHint } from '@/components/EmptyHint'
-import { AuthDialog } from '@/components/auth/AuthDialog'
 import type { ProjectMeta } from '@/types/project'
 
 type NavItem = {
@@ -28,7 +28,6 @@ interface SidebarProps {
 
 export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject, onDeleteProject }: SidebarProps) => {
 	const [user, setUser] = useState<{ email: string } | null>(null)
-	const [isAuthOpen, setIsAuthOpen] = useState(false)
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 	const [isAdding, setIsAdding] = useState(false)
 	const [newName, setNewName] = useState('')
@@ -169,14 +168,15 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	const maybeRenderUserInfo = () => {
 		if (!user) {
 			return (
-				<Button
-					variant='ghost'
-					onClick={() => setIsAuthOpen(true)}
-					className='w-full justify-start gap-2.5 px-2.5 h-9 text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5 cursor-pointer font-medium'
-				>
-					<LogIn className='w-4 h-4 opacity-70' />
-					<span>登入</span>
-				</Button>
+				<Link href='/login' className='w-full block'>
+					<Button
+						variant='ghost'
+						className='w-full justify-start gap-2.5 px-2.5 h-9 text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5 cursor-pointer font-medium'
+					>
+						<LogIn className='w-4 h-4 opacity-70' />
+						<span>登入</span>
+					</Button>
+				</Link>
 			)
 		}
 
@@ -220,7 +220,6 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 				onSave={saveApiKey}
 				onClear={clearApiKey}
 			/>
-			<AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} onSuccess={(email) => setUser({ email })} />
 			<aside
 				className='
 			  flex flex-col w-56 shrink-0 h-full
