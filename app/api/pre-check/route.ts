@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 			client.embeddings.create({
 				model: 'text-embedding-3-small',
 				input: idea,
-				dimensions: 512,
+				dimensions: 1536,
 			}),
 		])
 

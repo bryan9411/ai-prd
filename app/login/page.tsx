@@ -11,7 +11,7 @@ export default function LoginPage() {
 	const [message, setMessage] = useState<string | null>(null)
 	const router = useRouter()
 
-	const handleSuccess = (email: string) => {
+	const handleSuccess = () => {
 		if (mode === 'register') {
 			setMessage('註冊成功！若有啟用信箱驗證，請至信箱收信啟用帳號後登入。')
 			setMode('login')

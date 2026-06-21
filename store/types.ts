@@ -5,9 +5,9 @@ export interface ProjectSlice {
 	projectId: string
 	submitted: boolean
 	idea: string
-	initProject: (projectId: string) => void
+	initProject: (projectId: string) => Promise<void>
 	setIdea: (idea: string) => void
-	removeProject: () => void
+	removeProject: () => Promise<void>
 }
 
 export interface AISlice {
@@ -18,7 +18,7 @@ export interface AISlice {
 	generate: () => Promise<void>
 	clearGenerateError: () => void
 	clearValidationError: () => void
-	loadSimilarProject: () => void
+	loadSimilarProject: () => Promise<void>
 	forceGenerate: () => Promise<void>
 }
 
@@ -38,10 +38,10 @@ export interface VersionSlice {
 	activeVersionId: string | null
 	pinnedVersionId: string | null
 	isSaveSuccess: boolean
-	saveVersion: () => void
-	saveOverwrite: (versionId: string) => void
+	saveVersion: () => Promise<void>
+	saveOverwrite: (versionId: string) => Promise<void>
 	loadVersion: (versionId: string) => void
-	pinVersion: (versionId: string) => void
+	pinVersion: (versionId: string) => Promise<void>
 }
 
 export type ProjectStore = ProjectSlice & AISlice & ContentSlice & VersionSlice

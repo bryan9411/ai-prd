@@ -53,17 +53,56 @@ export const buildVersion = (
 ): ProjectVersion => {
 	const timestamp = Date.now()
 
+	// 建立 suggestionId 映射表並為 suggestions 生成新的 UUID
+	const suggestionIdMap = new Map<string, string>()
+	const clonedSuggestions = aiData?.suggestions?.map((s, idx) => {
+		const newId = uuidv4()
+
+		if (s.id) {
+			suggestionIdMap.set(s.id, newId)
+		}
+
+		suggestionIdMap.set(`ai_s_${idx}`, newId)
+		return {
+			...s,
+			id: newId,
+		}
+	})
+
+	// 複製任務並指派新的 UUID
+	const clonedTasks = tasks.map((t) => {
+		let nextSuggestionId = t.suggestionId || undefined
+		if (nextSuggestionId && suggestionIdMap.has(nextSuggestionId)) {
+			nextSuggestionId = suggestionIdMap.get(nextSuggestionId)
+		}
+		return {
+			...t,
+			id: uuidv4(),
+			suggestionId: nextSuggestionId,
+		}
+	})
+
+	// 複製工作流程與步驟，並指派新的 UUID
+	const clonedWorkflow: WorkflowData = {
+		roleAName: workflow.roleAName,
+		roleBName: workflow.roleBName,
+		steps: (workflow.steps || []).map((s) => ({
+			...s,
+			id: uuidv4(),
+		})),
+	}
+
 	return {
-		id: `v_${timestamp}`,
+		id: uuidv4(),
 		timestamp,
 		label: isOrigin ? '原始版本' : '版本',
 		isOrigin,
 		idea,
-		tasks,
-		workflow,
+		tasks: clonedTasks,
+		workflow: clonedWorkflow,
 		...(aiData?.prd !== undefined && { prd: aiData.prd }),
 		...(aiData?.phases !== undefined && { phases: aiData.phases }),
-		...(aiData?.suggestions !== undefined && { suggestions: aiData.suggestions }),
+		...(clonedSuggestions !== undefined && { suggestions: clonedSuggestions }),
 	}
 }
 

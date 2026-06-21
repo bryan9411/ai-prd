@@ -11,8 +11,8 @@ import { RightPanel } from '@/components/layout/RightPanel'
 import { EmptyHint } from '@/components/EmptyHint'
 import { SimilarProjectDialog } from '@/components/SimilarProjectDialog'
 import { useProjectStore } from '@/store/useProjectStore'
-import { loadProjects, saveProjects, deleteProjectData } from '@/lib/project-storage'
-import { pickNextColor, generateProjectId } from '@/lib/project-utils'
+import { fetchProjects, createProject, deleteProject } from '@/lib/supabase/db'
+import { pickNextColor } from '@/lib/project-utils'
 import type { ProjectMeta } from '@/types/project'
 
 export const dynamic = 'force-dynamic'
@@ -30,33 +30,33 @@ export default function Home() {
 
 	const handleToggleDarkModel = () => setIsDark((prev) => !prev)
 
-	const handleAddProject = (name: string) => {
+	const handleAddProject = async (name: string) => {
 		if (!name.trim()) return
 
-		const current = loadProjects()
-		const newProject: ProjectMeta = {
-			id: generateProjectId(),
-			name: name.trim(),
-			color: pickNextColor(current),
+		try {
+			const color = pickNextColor(projects)
+			const newProject = await createProject(name.trim(), color)
+			const next = [...projects, newProject]
+
+			setProjects(next)
+			setActiveProjectId(newProject.id)
+		} catch (err) {
+			console.error('建立專案失敗：', err)
 		}
-
-		const next = [...current, newProject]
-
-		setProjects(next)
-		saveProjects(next)
-		setActiveProjectId(newProject.id)
 	}
 
-	const handleDeleteProject = (id: string) => {
-		deleteProjectData(id)
-		const current = loadProjects()
-		const next = current.filter((p) => p.id !== id)
+	const handleDeleteProject = async (id: string) => {
+		try {
+			await deleteProject(id)
+			const next = projects.filter((p) => p.id !== id)
 
-		saveProjects(next)
-		setProjects(next)
+			setProjects(next)
 
-		if (id === activeProjectId) {
-			setActiveProjectId(next.length > 0 ? next[0].id : '')
+			if (id === activeProjectId) {
+				setActiveProjectId(next.length > 0 ? next[0].id : '')
+			}
+		} catch (err) {
+			console.error('刪除專案失敗：', err)
 		}
 	}
 
@@ -83,12 +83,18 @@ export default function Home() {
 	}, [activeProjectId])
 
 	useEffect(() => {
-		const stored = loadProjects()
-
-		startTransition(() => {
-			setProjects(stored)
-			setActiveProjectId(stored.length > 0 ? stored[0].id : '')
-		})
+		const loadInitialData = async () => {
+			try {
+				const stored = await fetchProjects()
+				startTransition(() => {
+					setProjects(stored)
+					setActiveProjectId(stored.length > 0 ? stored[0].id : '')
+				})
+			} catch (err) {
+				console.error('載入專案清單失敗：', err)
+			}
+		}
+		loadInitialData()
 	}, [])
 
 	useEffect(() => {

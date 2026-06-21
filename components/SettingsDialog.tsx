@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import {
 	AlertDialog,
@@ -25,6 +25,10 @@ interface SettingsDialogProps {
 export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: SettingsDialogProps) => {
 	const [inputValue, setInputValue] = useState(apiKey)
 	const [isVisible, setIsVisible] = useState(false)
+
+	useEffect(() => {
+		setInputValue(apiKey)
+	}, [apiKey])
 
 	const hasKey = apiKey.length > 0
 
@@ -74,12 +78,6 @@ export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: Setti
 		)
 	}
 
-	const renderStorageWarning = () => (
-		<p className='text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed'>
-			API key 儲存於本機 localStorage，請勿在共用裝置上使用。
-		</p>
-	)
-
 	const renderFooter = () => {
 		if (hasKey) {
 			return (
@@ -116,7 +114,6 @@ export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: Setti
 						<label className='text-xs font-medium text-neutral-600 dark:text-neutral-400'>OpenAI API Key</label>
 						{renderInput()}
 					</div>
-					{renderStorageWarning()}
 				</div>
 				{renderFooter()}
 			</AlertDialogContent>

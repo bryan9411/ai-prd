@@ -1,19 +1,37 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { getApiKey, saveApiKey as saveApiKeyToStorage, clearApiKey as clearApiKeyFromStorage } from '@/lib/project-storage'
+import { useState, useCallback, useEffect } from 'react'
+import { fetchUserSettings, saveUserSettings } from '@/lib/supabase/db'
 
 export const useSettings = () => {
-	const [apiKey, setApiKey] = useState(getApiKey)
+	const [apiKey, setApiKey] = useState('')
 
-	const saveApiKey = useCallback((key: string) => {
-		saveApiKeyToStorage(key)
-		setApiKey(key)
+	useEffect(() => {
+		fetchUserSettings()
+			.then((key) => {
+				setApiKey(key)
+			})
+			.catch((err) => {
+				console.error('載入設定失敗：', err)
+			})
 	}, [])
 
-	const clearApiKey = useCallback(() => {
-		clearApiKeyFromStorage()
-		setApiKey('')
+	const saveApiKey = useCallback(async (key: string) => {
+		try {
+			await saveUserSettings(key)
+			setApiKey(key)
+		} catch (err) {
+			console.error('儲存設定失敗：', err)
+		}
+	}, [])
+
+	const clearApiKey = useCallback(async () => {
+		try {
+			await saveUserSettings('')
+			setApiKey('')
+		} catch (err) {
+			console.error('清除設定失敗：', err)
+		}
 	}, [])
 
 	return { apiKey, saveApiKey, clearApiKey }

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useProjectStore } from '@/store/useProjectStore'
 import type { AISuggestion } from '@/lib/ai-schema'
+import { v4 as uuidv4 } from 'uuid'
 
 const impactStyle: Record<AISuggestion['impact'], string> = {
 	High: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900',
@@ -23,12 +24,12 @@ export const SuggestionContent = () => {
 	const getSuggestionId = (index: number) => `ai_s_${index}`
 
 	const handleAccept = (suggestion: AISuggestion, index: number) => {
-		const suggestionId = getSuggestionId(index)
+		const suggestionId = suggestion.id || getSuggestionId(index)
 
 		updateTasks([
 			...tasks,
 			{
-				id: suggestionId,
+				id: uuidv4(),
 				label: suggestion.title,
 				priority: suggestion.impact,
 				done: false,
@@ -39,7 +40,10 @@ export const SuggestionContent = () => {
 	}
 
 	const renderAcceptButton = (suggest: AISuggestion, index: number) => {
-		const isAdded = tasks.some((task) => task.suggestionId === getSuggestionId(index))
+		const isAdded = tasks.some((task) => {
+			if (!task.suggestionId) return false
+			return task.suggestionId === suggest.id || task.suggestionId === getSuggestionId(index)
+		})
 
 		return (
 			<Button onClick={() => handleAccept(suggest, index)} disabled={isAdded} className='gap-1.5'>
@@ -50,7 +54,10 @@ export const SuggestionContent = () => {
 	}
 
 	const renderSuggestionItem = (suggest: AISuggestion, index: number) => {
-		const isAdded = tasks.some((task) => task.suggestionId === getSuggestionId(index))
+		const isAdded = tasks.some((task) => {
+			if (!task.suggestionId) return false
+			return task.suggestionId === suggest.id || task.suggestionId === getSuggestionId(index)
+		})
 		const cardStyle = isAdded
 			? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
 			: 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300 dark:hover:border-neutral-700'

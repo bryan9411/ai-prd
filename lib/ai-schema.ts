@@ -54,6 +54,7 @@ export interface AIPhase {
 }
 
 export interface AISuggestion {
+	id?: string
 	category: string
 	title: string
 	description: string

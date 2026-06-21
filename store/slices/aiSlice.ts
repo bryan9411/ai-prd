@@ -1,8 +1,16 @@
 import type { StateCreator } from 'zustand'
 import axios from 'axios'
-import { getApiKey, loadProjectData, saveProjectData, loadProjects, updateProjectMeta } from '@/lib/project-storage'
-import { buildVersion, pushVersion, cosineSimilarity } from '@/lib/project-utils'
-import type { Task, WorkflowData, ProjectMeta } from '@/types/project'
+import { v4 as uuidv4 } from 'uuid'
+import { buildVersion } from '@/lib/project-utils'
+import {
+	fetchUserSettings,
+	fetchProjectData,
+	saveNewVersion,
+	updateProjectMeta,
+	matchSimilarProjects,
+	pinProjectVersion,
+} from '@/lib/supabase/db'
+import type { Task, WorkflowData } from '@/types/project'
 import type { AIGenerateOutput } from '@/lib/ai-schema'
 import type { ProjectStore, AISlice } from '../types'
 import { emptyWorkflow } from '../types'
@@ -22,8 +30,8 @@ const runGenerate = async (
 			{ headers: { Authorization: `Bearer ${apiKey}` } },
 		)
 
-		const tasks: Task[] = output.tasks.map((task, i) => ({
-			id: `t_${Date.now()}_${i}`,
+		const tasks: Task[] = output.tasks.map((task) => ({
+			id: uuidv4(),
 			label: task.label,
 			priority: task.priority,
 			done: false,
@@ -32,34 +40,41 @@ const runGenerate = async (
 		const workflow: WorkflowData = {
 			roleAName: output.workflow.roleAName,
 			roleBName: output.workflow.roleBName,
-			steps: output.workflow.steps.map((step, i) => ({
-				id: `s_${Date.now()}_${i}`,
+			steps: output.workflow.steps.map((step) => ({
+				id: uuidv4(),
 				roleAStep: step.roleAStep,
 				roleBStep: step.roleBStep,
 			})),
 		}
 
+		const suggestions = output.suggestions.map((s) => ({
+			...s,
+			id: uuidv4(),
+		}))
+
 		const originVersion = buildVersion(idea, tasks, workflow, true, {
 			prd: output.prd,
 			phases: output.phases,
-			suggestions: output.suggestions,
+			suggestions,
 		})
 
-		const data = loadProjectData(projectId) ?? { versions: [] }
-		const nextVersions = pushVersion(data.versions, originVersion)
-
-		saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: originVersion.id })
-		updateProjectMeta(projectId, { embedding })
+		// 寫入版本至資料庫，預設首個原始版本排序為 0
+		await saveNewVersion(projectId, originVersion, 0)
+		// 更新專案 Pinned Version ID 與 Embedding 向量
+		await pinProjectVersion(projectId, originVersion.id)
+		await updateProjectMeta(projectId, {
+			embedding,
+		})
 
 		set({
 			tasks,
 			workflow,
 			prd: output.prd,
 			phases: output.phases,
-			suggestions: output.suggestions,
+			suggestions,
 			submitted: true,
 			isDirty: false,
-			versions: nextVersions,
+			versions: [originVersion],
 			activeVersionId: originVersion.id,
 			pinnedVersionId: originVersion.id,
 		})
@@ -84,7 +99,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 
 		if (!idea.trim() || loading || submitted) return
 
-		const apiKey = getApiKey()
+		const apiKey = await fetchUserSettings()
 
 		if (!apiKey?.trim()) {
 			set({ generateError: '請先至設定中輸入 OpenAI API Key' })
@@ -112,24 +127,22 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			return set({ loading: false, validationError: preCheck.reason || '請輸入一個產品或商業構想' })
 		}
 
-		// 語意相似度比對
-		const SIMILARITY_THRESHOLD = 0.92
-		const allProjects = loadProjects()
-
-		let mostSimilar: { meta: ProjectMeta; similarity: number } | null = null
-
-		for (const meta of allProjects) {
-			if (!meta.embedding || meta.id === projectId) continue
-			const sim = cosineSimilarity(meta.embedding, preCheck.embedding)
-			if (sim >= SIMILARITY_THRESHOLD && (!mostSimilar || sim > mostSimilar.similarity)) {
-				mostSimilar = { meta, similarity: sim }
-			}
+		// 調用資料庫 pgvector 計算進行語意相似度比對 (Threshold 設為 0.92)
+		let mostSimilar: { id: string; name: string; color: string; similarity: number } | null = null
+		try {
+			mostSimilar = await matchSimilarProjects(preCheck.embedding, 0.92, 1, projectId)
+		} catch (err) {
+			console.error('向量搜尋失敗：', err)
 		}
 
 		if (mostSimilar) {
 			set({
 				loading: false,
-				similarProject: { ...mostSimilar, currentEmbedding: preCheck.embedding },
+				similarProject: {
+					meta: { id: mostSimilar.id, name: mostSimilar.name, color: mostSimilar.color },
+					similarity: mostSimilar.similarity,
+					currentEmbedding: preCheck.embedding,
+				},
 			})
 			return
 		}
@@ -145,11 +158,11 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 		set({ validationError: null })
 	},
 
-	loadSimilarProject: () => {
-		const { idea, projectId, similarProject } = get()
+	loadSimilarProject: async () => {
+		const { idea, projectId, similarProject, versions } = get()
 		if (!similarProject) return
 
-		const sourceData = loadProjectData(similarProject.meta.id)
+		const sourceData = await fetchProjectData(similarProject.meta.id)
 		const originVersion = sourceData?.versions.find((v) => v.isOrigin)
 
 		if (!originVersion) {
@@ -162,11 +175,14 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			suggestions: originVersion.suggestions,
 		})
 
-		const data = loadProjectData(projectId) ?? { versions: [] }
-		const nextVersions = pushVersion(data.versions, newOriginVersion)
+		// 儲存新版本與更新專案屬性
+		await saveNewVersion(projectId, newOriginVersion, versions.length)
+		await pinProjectVersion(projectId, newOriginVersion.id)
+		await updateProjectMeta(projectId, {
+			embedding: similarProject.currentEmbedding,
+		})
 
-		saveProjectData(projectId, { versions: nextVersions, pinnedVersionId: newOriginVersion.id })
-		updateProjectMeta(projectId, { embedding: similarProject.currentEmbedding })
+		const nextVersions = [...versions, newOriginVersion]
 
 		set({
 			tasks: originVersion.tasks,
@@ -185,7 +201,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 
 	forceGenerate: async () => {
 		const { idea, projectId, similarProject } = get()
-		const apiKey = getApiKey()
+		const apiKey = await fetchUserSettings()
 
 		if (!apiKey?.trim() || !similarProject) return
 

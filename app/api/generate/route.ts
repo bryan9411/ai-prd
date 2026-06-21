@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { AI_OUTPUT_SCHEMA, type AIGenerateOutput } from '@/lib/ai-schema'
 import { SYSTEM_PROMPT } from '@/prompts/prd'
 
-const MODEL = 'gpt-5'
+const MODEL = 'gpt-4o'
 
 export async function POST(req: NextRequest) {
 	const authHeader = req.headers.get('Authorization')

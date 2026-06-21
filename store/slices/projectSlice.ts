@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import { loadProjectData, saveProjectData, deleteProjectData } from '@/lib/project-storage'
+import { fetchProjectData, deleteProject } from '@/lib/supabase/db'
 import { emptyState, emptyWorkflow } from '../types'
 import type { ProjectStore, ProjectSlice } from '../types'
 
@@ -8,30 +8,15 @@ export const createProjectSlice: StateCreator<ProjectStore, [], [], ProjectSlice
 	submitted: false,
 	idea: '',
 
-	initProject: (projectId: string) => {
+	initProject: async (projectId: string) => {
 		if (!projectId) {
 			return set({ projectId: '', ...emptyState })
 		}
 
-		const data = loadProjectData(projectId)
+		const data = await fetchProjectData(projectId)
 
 		if (data && data.versions.length > 0) {
-			let versions = data.versions
-
-			const hasOrigin = versions.some((version) => version.isOrigin)
-
-			if (!hasOrigin) {
-				const oldestVersion = versions[versions.length - 1]
-
-				versions = versions.map((version) => {
-					if (version.id !== oldestVersion.id) return version
-
-					return { ...version, isOrigin: true, label: '原始版本' }
-				})
-
-				saveProjectData(projectId, { ...data, versions })
-			}
-
+			const versions = data.versions
 			const pinnedId = data.pinnedVersionId ?? null
 			const activeVersion = pinnedId
 				? (versions.find((v) => v.id === pinnedId) ?? versions[versions.length - 1])
@@ -65,11 +50,11 @@ export const createProjectSlice: StateCreator<ProjectStore, [], [], ProjectSlice
 		set({ idea })
 	},
 
-	removeProject: () => {
+	removeProject: async () => {
 		const { projectId } = get()
 
 		if (projectId) {
-			deleteProjectData(projectId)
+			await deleteProject(projectId)
 		}
 
 		set({ ...emptyState })
