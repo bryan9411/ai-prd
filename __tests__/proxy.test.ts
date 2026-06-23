@@ -9,12 +9,12 @@ jest.mock('@supabase/ssr', () => ({
 
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest } from 'next/server'
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 
 const mockGetUser = jest.fn()
 const mockCreateServerClient = createServerClient as jest.Mock
 
-describe('middleware', () => {
+describe('proxy', () => {
 	const originalEnv = process.env
 
 	beforeEach(() => {
@@ -39,7 +39,7 @@ describe('middleware', () => {
 		const req = new NextRequest('http://localhost/api/generate', { method: 'POST' })
 
 		// 操作
-		const res = await middleware(req)
+		const res = await proxy(req)
 
 		// 驗證：不應呼叫 getUser
 		expect(mockGetUser).not.toHaveBeenCalled()
@@ -53,7 +53,7 @@ describe('middleware', () => {
 		const req = new NextRequest('http://localhost/dashboard')
 
 		// 操作
-		const res = await middleware(req)
+		const res = await proxy(req)
 
 		// 驗證
 		expect(res.status).toBe(307)
@@ -66,7 +66,7 @@ describe('middleware', () => {
 		const req = new NextRequest('http://localhost/login')
 
 		// 操作
-		const res = await middleware(req)
+		const res = await proxy(req)
 
 		// 驗證
 		expect(res.headers.get('location')).toBeNull()
@@ -78,7 +78,7 @@ describe('middleware', () => {
 		const req = new NextRequest('http://localhost/')
 
 		// 操作
-		const res = await middleware(req)
+		const res = await proxy(req)
 
 		// 驗證
 		expect(res.headers.get('location')).toBeNull()
@@ -90,7 +90,7 @@ describe('middleware', () => {
 		const req = new NextRequest('http://localhost/login')
 
 		// 操作
-		const res = await middleware(req)
+		const res = await proxy(req)
 
 		// 驗證
 		expect(res.status).toBe(307)
