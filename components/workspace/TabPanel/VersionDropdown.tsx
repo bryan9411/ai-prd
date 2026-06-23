@@ -74,7 +74,7 @@ export const VersionDropdown = () => {
 				? 'text-stone-900 dark:text-neutral-100 font-medium'
 				: 'text-stone-600 dark:text-neutral-400'
 			const pinStyle = isPinned
-				? 'text-[#0A8E9C] dark:text-[#2DD4E4] bg-[#E4F7F9] dark:bg-[#0DAABA]/12 hover:bg-[#E4F7F9] dark:hover:bg-[#0DAABA]/20'
+				? 'text-primary bg-primary/10 hover:bg-primary/20'
 				: 'text-stone-300 dark:text-neutral-600 hover:text-stone-500 dark:hover:text-neutral-400 hover:bg-stone-100 dark:hover:bg-white/5'
 
 			return (
@@ -111,8 +111,8 @@ export const VersionDropdown = () => {
 		return (
 			<>
 				<div className='fixed inset-0 z-10' onClick={() => setMenuOpen(false)} />
-				<div className='absolute right-0 top-full mt-1.5 z-20 min-w-64 bg-white dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] rounded-xl shadow-xl py-1.5 overflow-hidden'>
-					<p className='px-4 pt-1.5 pb-2.5 text-xs text-stone-400 dark:text-neutral-500 border-b border-stone-100 dark:border-[#2A2825]'>
+				<div className='absolute right-0 top-full mt-1.5 z-20 min-w-64 bg-popover border border-border rounded-xl shadow-xl py-1.5 overflow-hidden'>
+					<p className='px-4 pt-1.5 pb-2.5 text-xs text-muted-foreground border-b border-border'>
 						釘選後，重整頁面將自動載入該版本
 					</p>
 					{renderVersions()}

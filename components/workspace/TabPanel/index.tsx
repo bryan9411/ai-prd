@@ -76,8 +76,8 @@ export const TabPanel = () => {
 			const Icon = tab.icon
 			const isActive = activeTab === tab.id
 			const activeTabStyle = isActive
-				? 'text-[#0A8E9C] dark:text-[#2DD4E4] font-semibold border-b-[2px] border-[#0DAABA]'
-				: 'text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-300 border-b-[2px] border-transparent'
+				? 'text-primary font-semibold border-b-[2px] border-primary'
+				: 'text-muted-foreground hover:text-foreground border-b-[2px] border-transparent'
 
 			return (
 				<button
@@ -106,8 +106,8 @@ export const TabPanel = () => {
 	}
 
 	return (
-		<div className='rounded-xl bg-white dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] shadow-sm'>
-			<div className='flex items-center border-b border-stone-200 dark:border-[#252220] px-2'>
+		<div className='rounded-xl bg-card border border-border shadow-sm'>
+			<div className='flex items-center border-b border-border px-2'>
 				<div className='flex items-stretch'>{renderTabs()}</div>
 				<div className='flex items-center gap-2 ml-auto'>
 					<VersionDropdown />

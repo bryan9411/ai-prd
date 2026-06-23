@@ -18,12 +18,12 @@ export const Topbar = ({ projectName, isDark, onToggleDark }: TopbarProps) => {
 	}
 
 	return (
-		<header className='flex items-center justify-between px-6 h-14 shrink-0 bg-background border-b border-stone-200/80 dark:border-[#252220]'>
+		<header className='flex items-center justify-between px-6 h-14 shrink-0 bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-10 transition-all'>
 			{/* 麵包屑 */}
 			<div className='flex items-center gap-1.5 text-sm'>
-				<span className='text-stone-400 dark:text-neutral-600'>專案列表</span>
-				<span className='text-stone-300 dark:text-neutral-700'>/</span>
-				<span className='text-stone-800 dark:text-neutral-200 font-semibold'>{projectName}</span>
+				<span className='text-muted-foreground'>專案列表</span>
+				<span className='text-muted-foreground/50'>/</span>
+				<span className='text-foreground font-semibold'>{projectName}</span>
 			</div>
 
 			<div className='flex items-center gap-2'>
@@ -33,10 +33,10 @@ export const Topbar = ({ projectName, isDark, onToggleDark }: TopbarProps) => {
 					aria-label='切換黑暗模式'
 					className='
 						w-8 h-8 rounded-md flex items-center justify-center
-						text-stone-500 dark:text-neutral-400
-						hover:bg-stone-200/60 dark:hover:bg-[#252220]
-						border border-stone-200 dark:border-[#2A2825]
-						transition-colors text-sm'
+						text-muted-foreground
+						hover:bg-accent hover:text-accent-foreground
+						border border-border
+						transition-all shadow-sm active:scale-95 text-sm'
 				>
 					{maybeRenderDarkIcon()}
 				</button>

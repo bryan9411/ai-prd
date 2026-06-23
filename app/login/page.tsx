@@ -42,8 +42,8 @@ export default function LoginPage() {
 		<div className='flex min-h-screen items-center justify-center bg-background px-4'>
 			<div className='w-full max-w-sm'>
 				<div className='mb-8 flex flex-col items-center gap-3'>
-					<div className='flex h-11 w-11 items-center justify-center rounded-xl bg-[#0DAABA]/10'>
-						<Sparkles className='h-5.5 w-5.5 text-[#0DAABA]' />
+					<div className='flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/20'>
+						<Sparkles className='h-5.5 w-5.5 text-primary' />
 					</div>
 					<div className='text-center'>
 						<h1 className='text-xl font-bold tracking-tight text-foreground'>PRD 產生器</h1>

@@ -45,9 +45,9 @@ export const IdeaInput = () => {
 	const maybeRenderInputPreview = () => {
 		if (idea) {
 			return (
-				<p className='mt-2.5 text-xs text-stone-400 dark:text-neutral-600 flex items-center gap-1.5'>
-					<span className='text-[#0DAABA]'>↳</span>
-					<span className='text-neutral-600 dark:text-neutral-400 italic'>&ldquo;{idea}&rdquo;</span>
+				<p className='mt-2.5 text-xs text-muted-foreground flex items-center gap-1.5'>
+					<span className='text-primary'>↳</span>
+					<span className='italic'>&ldquo;{idea}&rdquo;</span>
 				</p>
 			)
 		}
@@ -75,9 +75,9 @@ export const IdeaInput = () => {
 	}, [idea])
 
 	return (
-		<section className='rounded-xl bg-white dark:bg-[#1C1B18] border border-stone-200 dark:border-[#2A2825] p-5 shadow-sm'>
+		<section className='rounded-xl bg-card border border-border p-5 shadow-sm transition-shadow hover:shadow-md animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]' style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
 			<div className='flex items-center gap-2 mb-3'>
-				<span className='text-xs font-bold text-stone-400 dark:text-neutral-600 uppercase tracking-widest'>
+				<span className='text-xs font-bold text-muted-foreground/60 uppercase tracking-widest'>
 					輸入你的產品想法
 				</span>
 			</div>
@@ -92,21 +92,21 @@ export const IdeaInput = () => {
 				disabled={submitted}
 				className='
 					w-full resize-none overflow-hidden rounded-lg
-					border border-stone-200 dark:border-[#2A2825]
-					bg-stone-50/60 dark:bg-white/3 px-3 py-2 text-sm leading-relaxed
-					placeholder:text-stone-400 dark:placeholder:text-neutral-600
-					focus:outline-none focus:ring-2 focus:ring-[#0DAABA]/30 dark:focus:ring-[#0DAABA]/20
+					border border-border
+					bg-input/30 dark:bg-input/10 px-3 py-2 text-sm leading-relaxed
+					placeholder:text-muted-foreground
+					focus:outline-none focus:ring-2 focus:ring-ring/30
 					disabled:opacity-50 disabled:cursor-not-allowed
 					transition-all min-h-9
 				'
 			/>
 
 			<div className='flex items-center justify-between mt-2.5'>
-				<span className='text-[11px] text-stone-300 dark:text-neutral-700 select-none'>⌘ Enter 送出</span>
+				<span className='text-[11px] text-muted-foreground/50 select-none'>⌘ Enter 送出</span>
 				<Button
 					onClick={generate}
 					disabled={isDisabled || !idea.trim()}
-					className='h-8 text-sm gap-2 px-4 whitespace-nowrap shadow-[0_2px_12px_rgba(13,170,186,0.35)] disabled:shadow-none'
+					className='h-8 text-sm gap-2 px-4 whitespace-nowrap shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all disabled:shadow-none'
 					title={submitted ? '已生成，如需重新生成請先清除儲存資料' : ''}
 				>
 					{renderBtnText()}

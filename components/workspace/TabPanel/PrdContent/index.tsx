@@ -30,10 +30,10 @@ export const PrdContent = () => {
 		return userPersonas.map((persona) => (
 			<div
 				key={persona.name}
-				className='rounded-lg bg-stone-50 dark:bg-white/3 border-l-2 border-[#0DAABA]/25 dark:border-[#0DAABA]/20 hover:border-[#0DAABA] dark:hover:border-[#0DAABA] px-4 py-3 transition-colors'
+				className='rounded-lg bg-card border-l-2 border-primary/25 hover:border-primary px-4 py-3 transition-colors shadow-sm'
 			>
-				<p className='text-xs font-semibold text-[#0A8E9C] dark:text-[#2DD4E4] mb-0.5'>{persona.name}</p>
-				<p className='text-xs text-stone-500 dark:text-neutral-400 leading-relaxed'>{persona.description}</p>
+				<p className='text-xs font-semibold text-primary mb-0.5'>{persona.name}</p>
+				<p className='text-xs text-muted-foreground leading-relaxed'>{persona.description}</p>
 			</div>
 		))
 	}
@@ -42,11 +42,11 @@ export const PrdContent = () => {
 		return features.map((feature) => (
 			<div
 				key={feature.name}
-				className='rounded-lg bg-stone-50 dark:bg-white/3 border border-stone-200 dark:border-[#2A2825] border-t-2 border-t-transparent hover:border-t-[#0DAABA] p-3.5 transition-all'
+				className='rounded-lg bg-card border border-border border-t-2 border-t-transparent hover:border-t-primary p-3.5 transition-all shadow-sm'
 			>
 				<div className='text-xl mb-2'>{feature.icon}</div>
-				<p className='text-sm font-semibold text-stone-800 dark:text-neutral-200 mb-1'>{feature.name}</p>
-				<p className='text-xs text-stone-500 dark:text-neutral-400 leading-relaxed'>{feature.description}</p>
+				<p className='text-sm font-semibold text-foreground mb-1'>{feature.name}</p>
+				<p className='text-xs text-muted-foreground leading-relaxed'>{feature.description}</p>
 			</div>
 		))
 	}
@@ -55,14 +55,14 @@ export const PrdContent = () => {
 		return systemModules.map((module, index) => (
 			<div
 				key={module.name}
-				className='flex items-start gap-3 rounded-lg bg-stone-50 dark:bg-white/3 border border-stone-200 dark:border-[#2A2825] px-3.5 py-3'
+				className='flex items-start gap-3 rounded-lg bg-card border border-border px-3.5 py-3 shadow-sm'
 			>
-				<span className='shrink-0 w-5 h-5 rounded-full bg-[#E4F7F9] dark:bg-[#0DAABA]/15 text-[#0A8E9C] dark:text-[#2DD4E4] text-[10px] font-bold flex items-center justify-center mt-0.5'>
+				<span className='shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center mt-0.5'>
 					{index + 1}
 				</span>
 				<div>
-					<p className='text-xs font-semibold text-stone-800 dark:text-neutral-200'>{module.name}</p>
-					<p className='text-[11px] text-stone-500 dark:text-neutral-400 leading-relaxed mt-0.5'>
+					<p className='text-xs font-semibold text-foreground'>{module.name}</p>
+					<p className='text-[11px] text-muted-foreground leading-relaxed mt-0.5'>
 						{module.description}
 					</p>
 				</div>
@@ -74,11 +74,11 @@ export const PrdContent = () => {
 		return dataModels.map((model) => (
 			<div
 				key={model.name}
-				className='rounded-lg bg-stone-50 dark:bg-white/3 border-l-2 border-[#0DAABA]/30 dark:border-[#0DAABA]/20 px-3 py-2 shadow-sm'
+				className='rounded-lg bg-card border-l-2 border-primary/30 px-3 py-2 shadow-sm'
 				title={model.description}
 			>
-				<p className='text-xs font-mono font-semibold text-stone-800 dark:text-neutral-200'>{model.name}</p>
-				<p className='text-[10px] text-stone-400 dark:text-neutral-500 mt-0.5'>{model.description}</p>
+				<p className='text-xs font-mono font-semibold text-foreground'>{model.name}</p>
+				<p className='text-[10px] text-muted-foreground mt-0.5'>{model.description}</p>
 			</div>
 		))
 	}
@@ -86,8 +86,8 @@ export const PrdContent = () => {
 	const renderValuePropositions = () => {
 		return valuePropositions.map((value, index) => (
 			<li key={index} className='flex items-start gap-2'>
-				<span className='text-[#0DAABA] dark:text-[#14C4D5] mt-0.5 shrink-0'>✓</span>
-				<span className='text-xs text-stone-600 dark:text-neutral-300 leading-relaxed'>{value}</span>
+				<span className='text-primary mt-0.5 shrink-0'>✓</span>
+				<span className='text-xs text-muted-foreground/90 leading-relaxed'>{value}</span>
 			</li>
 		))
 	}
@@ -102,12 +102,12 @@ export const PrdContent = () => {
 
 			{/* 產品目標 */}
 			<div className='flex gap-0'>
-				<div className='w-1 shrink-0 rounded-full bg-[#0DAABA] mr-3' />
-				<div className='flex-1 bg-[#E4F7F9] dark:bg-[#0DAABA]/10 rounded-r-lg px-3 py-2.5'>
-					<p className='text-[10px] font-bold uppercase tracking-widest text-[#0A8E9C] dark:text-[#2DD4E4] mb-1'>
+				<div className='w-1 shrink-0 rounded-full bg-primary mr-3' />
+				<div className='flex-1 bg-primary/10 rounded-r-lg px-3 py-2.5'>
+					<p className='text-[10px] font-bold uppercase tracking-widest text-primary mb-1'>
 						產品目標
 					</p>
-					<p className='text-sm text-stone-700 dark:text-neutral-300 leading-relaxed'>{productGoal}</p>
+					<p className='text-sm text-foreground/80 leading-relaxed'>{productGoal}</p>
 				</div>
 			</div>
 

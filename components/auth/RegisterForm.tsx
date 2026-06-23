@@ -114,7 +114,7 @@ export const RegisterForm = ({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
 			<Button
 				type='submit'
 				disabled={isLoading}
-				className='w-full mt-2 cursor-pointer bg-[#0DAABA] hover:bg-[#0DAABA]/90 text-white'
+				className='w-full mt-2 cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground'
 			>
 				{maybeRenderLoaderIcon()}
 			</Button>
@@ -125,7 +125,7 @@ export const RegisterForm = ({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
 					type='button'
 					onClick={onSwitchToLogin}
 					disabled={isLoading}
-					className='text-[#0DAABA] hover:underline font-semibold cursor-pointer disabled:opacity-50'
+					className='text-primary hover:underline font-semibold cursor-pointer disabled:opacity-50'
 				>
 					返回登入
 				</button>

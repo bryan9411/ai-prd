@@ -85,10 +85,10 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 					key={item.label}
 					variant='ghost'
 					onClick={item.onClick}
-					className='w-full justify-start gap-2.5 px-2.5 h-8 cursor-pointer text-sm text-stone-500 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-neutral-100 hover:bg-stone-200/60 dark:hover:bg-white/5'
+					className='w-full justify-start gap-2.5 px-2.5 h-8 cursor-pointer text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all active:scale-[0.98]'
 				>
 					<Icon className='w-3.5 h-3.5 opacity-70' />
-					<span>{item.label}</span>
+					<span className='tracking-wide'>{item.label}</span>
 				</Button>
 			)
 		})
@@ -99,25 +99,26 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 			return <EmptyHint compact icon={FolderOpen} title='尚未建立任何專案' />
 		}
 
-		return projects.map((project) => {
+		return projects.map((project, index) => {
 			const isActive = activeProject === project.id
 			const activeProjectStyle = isActive
-				? 'bg-[#0DAABA]/10 dark:bg-[#0DAABA]/10 text-[#0A8E9C] dark:text-[#2DD4E4] font-semibold'
-				: 'text-stone-500 dark:text-neutral-500 hover:bg-stone-200/60 dark:hover:bg-white/5 hover:text-stone-800 dark:hover:text-neutral-200'
+				? 'bg-sidebar-primary/10 text-sidebar-primary font-semibold'
+				: 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
 
 			return (
 				<div
 					key={project.id}
 					className={cx(
-						'group relative border-l-2 transition-colors',
-						isActive ? 'border-[#0DAABA]' : 'border-transparent',
+						'group relative border-l-2 transition-colors animate-in fade-in slide-in-from-left-4 duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+						isActive ? 'border-sidebar-primary' : 'border-transparent',
 					)}
+					style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
 				>
 					<Button
 						variant='ghost'
 						onClick={() => onProjectChange(project.id)}
 						className={cx(
-							'flex items-center gap-2.5 px-2.5 h-auto py-1.5 rounded-md text-sm transition-all justify-start w-full pr-7',
+							'flex items-center gap-2.5 px-2.5 h-auto py-1.5 rounded-md text-sm transition-all active:scale-[0.98] justify-start w-full pr-7',
 							activeProjectStyle,
 						)}
 					>
@@ -177,11 +178,11 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 			return (
 				<div className='flex flex-col gap-2'>
 					<div className='flex items-center gap-2.5 px-1 py-0.5'>
-						<div className='w-6 h-6 rounded-full bg-[#0DAABA]/15 dark:bg-[#0DAABA]/20 flex items-center justify-center text-[10px] font-bold text-[#0A8E9C] dark:text-[#2DD4E4] shrink-0'>
+						<div className='w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0'>
 							{user.email ? user.email[0].toUpperCase() : 'U'}
 						</div>
 						<div className='min-w-0 flex-1'>
-							<p className='text-xs font-medium text-stone-750 dark:text-neutral-300 truncate' title={user.email ?? ''}>
+							<p className='text-xs font-medium text-sidebar-foreground truncate' title={user.email ?? ''}>
 								{user.email}
 							</p>
 						</div>
@@ -218,34 +219,34 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 			<aside
 				className='
 			  flex flex-col w-56 shrink-0 h-full
-				bg-[#EDECEA] dark:bg-[#0D0D0C]
-			  border-r border-stone-200 dark:border-[#2A2825]'
+				bg-sidebar
+			  border-r border-sidebar-border'
 			>
 				{/* ── Logo ── */}
-				<div className='flex items-center gap-2.5 px-4 h-14 border-b border-stone-200 dark:border-[#2A2825] shrink-0'>
-					<div className='w-6 h-6 rounded-md bg-[#0DAABA] flex items-center justify-center shrink-0'>
-						<span className='text-white text-[11px] font-black tracking-tight'>P</span>
+				<div className='flex items-center gap-2.5 px-4 h-14 border-b border-sidebar-border shrink-0'>
+					<div className='w-6 h-6 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/20'>
+						<span className='text-primary-foreground text-[11px] font-black tracking-tight'>P</span>
 					</div>
-					<span className='text-sm font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight'>
+					<span className='text-sm font-semibold text-sidebar-foreground tracking-tighter'>
 						PRD 產生器
 					</span>
 				</div>
 
 				{/* ── 主導覽 ── */}
 				<nav className='flex flex-col gap-0.5 px-2 pt-3'>{renderNavItems()}</nav>
-				<div className='mx-3 my-3 border-t border-stone-200 dark:border-[#2A2825]' />
+				<div className='mx-3 my-3 border-t border-sidebar-border' />
 
 				{/* ── PRD 專案列表 ── */}
 				<div className='px-2 flex-1 min-h-0 overflow-y-auto'>
 					<div className='flex items-center justify-between px-2.5 mb-1.5'>
-						<span className='text-[10px] font-bold text-stone-400 dark:text-neutral-600 uppercase tracking-widest'>
+						<span className='text-[10px] font-bold text-sidebar-foreground/50 uppercase tracking-widest'>
 							專案列表
 						</span>
 						<Button
 							variant='ghost'
 							size='icon'
 							onClick={handleStartAdd}
-							className='w-5 h-5 text-stone-400 hover:text-stone-700 dark:hover:text-neutral-200'
+							className='w-5 h-5 text-sidebar-foreground/50 hover:text-sidebar-foreground'
 						>
 							<Plus className='w-3.5 h-3.5' />
 						</Button>
@@ -257,7 +258,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 				</div>
 
 				{/* ── 使用者資訊 ── */}
-				<div className='px-3 py-3 border-t border-stone-200 dark:border-[#2A2825] shrink-0'>{renderUserInfo()}</div>
+				<div className='px-3 py-3 border-t border-sidebar-border shrink-0'>{renderUserInfo()}</div>
 			</aside>
 		</>
 	)
