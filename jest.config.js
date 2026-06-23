@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 const config = {
 	preset: 'ts-jest',
+	verbose: true,
 	testEnvironment: 'jsdom',
 	roots: ['<rootDir>'],
 	testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
