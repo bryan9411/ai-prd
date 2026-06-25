@@ -4,54 +4,68 @@
 
 **[➜ 線上 Demo：AI PRD 產生器](https://aiprd-studio.vercel.app/)**
 
-![screenshot](public/screencapture.png)
-
 ## 功能介紹
 
-- 輸入產品想法，自動生成 PRD、任務清單、開發流程、階段規劃、策略建議
-- 多專案管理，支援版本歷史與釘選
-- OpenAI API Key 由使用者自行輸入，不經過後端，資料存在本機
-- 深色 / 淺色模式切換
-- **輸入語意驗證**：生成前先以輕量模型（gpt-4o-mini）判斷輸入是否為有效的產品以及輸入，非預期輸入（如程式碼請求、一般問答）會即時提示，不消耗生成 token
-- **語意快取**：生成完成後將想法的 embedding 向量存入 localStorage；下次輸入語意相似的想法時，詢問是否沿用既有結果，避免重複消耗 token
+- **產品需求生成**：輸入產品想法，自動生成 PRD、任務清單、開發流程、階段規劃、策略建議
+- **雲端多專案管理**：支援完整的使用者註冊、登入與登出功能，專案與版本歷史資料皆與 Supabase 雲端資料庫進行即時同步，並支援版本釘選功能
+- **OpenAI API Key 加密儲存**：API Key 由使用者自行輸入，經由 `ENCRYPTION_KEY` 加密後安全儲存於 Supabase 資料庫，隱私安全無虞
+- **深色 / 淺色模式切換**
+- **輸入語意驗證**：生成前先以輕量模型（gpt-4o-mini）判斷輸入是否為有效的產品及輸入，非預期輸入（如程式碼請求、一般問答）會即時提示，不消耗生成 token
+- **語意快取**：生成完成後將想法的 embedding 向量存入 Supabase 資料庫；下次輸入語意相似的想法時，利用 pgvector (`match_projects` 預存程序) 在資料庫端進行相似度比對並詢問是否沿用既有結果，避免重複消耗 token
 
 ## 使用技術
 
-| 類別     | 使用技術                                                                                                        |
-| -------- | --------------------------------------------------------------------------------------------------------------- |
-| 框架     | Next.js 15 App Router                                                                                           |
-| UI       | React 19、Tailwind CSS v4、shadcn/ui                                                                            |
-| 狀態管理 | Zustand                                                                                                         |
-| AI       | OpenAI SDK（Structured Output + JSON Schema）<br>生成：gpt-5　驗證：gpt-4o-mini　向量化：text-embedding-3-small |
-| 資料儲存 | localStorage                                                                                                    |
-| 語言     | TypeScript                                                                                                      |
+| 類別     | 使用技術                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 框架     | Next.js 16 App Router                                                                                                    |
+| UI       | React 19、Tailwind CSS v4、shadcn/ui                                                                                     |
+| 狀態管理 | Zustand                                                                                                                  |
+| AI       | OpenAI SDK（Structured Output + JSON Schema）<br>生成：gpt-4o<br>語意檢查：gpt-4o-mini<br>向量化：text-embedding-3-small |
+| 資料庫   | Supabase (PostgreSQL + pgvector)<br>Supabase Auth 身份驗證                                                               |
+| 測試     | Jest、React Testing Library                                                                                              |
+| 語言     | TypeScript                                                                                                               |
 
 
 ## 資料夾結構
 
 ```
-app/api/generate/      # AI 生成 API Route（gpt-5）
-app/api/pre-check/     # 輸入驗證 + embedding 向量化 API Route（gpt-4o-mini + text-embedding-3-small）
-components/workspace/  # 主要功能 component
-prompts/               # AI 系統 Prompt
+app/api/generate/      # AI 生成 API Route
+app/api/pre-check/     # 輸入語意檢查 + embedding 向量化 API Route
+components/            # React 元件
 store/                 # Zustand 狀態管理
 types/                 # TypeScript 型別定義
-lib/                   # 相關工具與 AI Schema
+lib/                   # 相關工具、AI Schema 與 Supabase 用戶端/資料庫操作
+skills/                # AI 輔助開發 Skill
+__tests__/             # 測試案例
 ```
 
 ## 本地啟動
 
-```bash
-pnpm install
-pnpm dev
-```
+1. **安裝依賴**
+   ```bash
+   pnpm install
+   ```
 
-啟動後，點擊設定，輸入你的 OpenAI API Key 即可使用。
+2. **設定環境變數**
+   複製 `.env.example` 並重新命名為 `.env.local`，填入對應的環境變數：
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=你的_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=你的_SUPABASE_ANON_KEY
+   ENCRYPTION_KEY=你的加密金鑰 (用於加密存放於 Supabase 的 API Key)
+   ```
 
-> API Key 儲存在瀏覽器 localStorage，不會傳送至任何第三方伺服器。
+3. **啟動開發伺服器**
+   ```bash
+   pnpm dev
+   ```
 
-## Todo
+啟動後即可註冊/登入帳號，並在設定中輸入你的 OpenAI API Key。
 
-- [ ] 後端資料庫儲存，預計使用 supabase
-- [ ] 登入 / 登出 / 註冊 功能
-- [ ] 匯出為 Markdown / Notion
+## 測試說明
+
+專案中包含完整的 Jest 測試套件，並包含 AI agent Skill：
+
+### 執行測試指令
+- **執行所有測試**：`pnpm test`
+- **監聽模式**：`pnpm test:watch`
+- **產生測試報告**：`pnpm test:coverage`
