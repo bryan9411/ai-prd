@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
-import { AI_OUTPUT_SCHEMA, type AIGenerateOutput } from '@/lib/ai-schema'
+import { streamText, Output, createTextStreamResponse, toTextStream } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { aiGenerateOutputSchema } from '@/lib/ai-schema'
 import { SYSTEM_PROMPT } from '@/prompts/prd'
 
-const MODEL = 'gpt-4o'
+const MODEL = 'gpt-5-mini'
 
 export async function POST(req: NextRequest) {
 	const authHeader = req.headers.get('Authorization')
@@ -28,32 +29,22 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ error: '缺少產品構想內容' }, { status: 400 })
 	}
 
-	const client = new OpenAI({ apiKey })
-
 	try {
-		const response = await client.chat.completions.create({
-			model: MODEL,
-			messages: [
-				{ role: 'system', content: SYSTEM_PROMPT },
-				{ role: 'user', content: body.idea },
-			],
-			response_format: {
-				type: 'json_schema',
-				json_schema: {
-					name: 'prd_output',
-					strict: true,
-					schema: AI_OUTPUT_SCHEMA,
-				},
+		const openai = createOpenAI({ apiKey })
+
+		const result = streamText({
+			model: openai(MODEL),
+			system: SYSTEM_PROMPT,
+			prompt: body.idea,
+			output: Output.object({ schema: aiGenerateOutputSchema }),
+			onError: ({ error }) => {
+				console.error('PRD 生成串流失敗：', error)
 			},
 		})
 
-		const content = response.choices[0]?.message?.content
-		if (!content) {
-			return NextResponse.json({ error: 'AI 未回傳內容，請再試一次' }, { status: 500 })
-		}
-
-		const result = JSON.parse(content) as AIGenerateOutput
-		return NextResponse.json(result)
+		return createTextStreamResponse({
+			stream: toTextStream({ stream: result.stream }),
+		})
 	} catch (err: unknown) {
 		const error = err as {
 			status?: number
@@ -68,7 +59,7 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: '請求過於頻繁或超過配額，請稍後再試' }, { status: 429 })
 		}
 
-		// 回傳 OpenAI 的原始錯誤訊息，方便 debug
+		// 回傳原始錯誤訊息，方便 debug
 		const detail = error.error?.message ?? error.message ?? '未知錯誤'
 		const code = error.error?.code ? ` [${error.error.code}]` : ''
 		const status = error.status ? ` (HTTP ${error.status})` : ''

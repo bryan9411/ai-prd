@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { buildVersion } from '@/lib/project-utils'
+import { emptyWorkflow } from '../types'
 import {
 	fetchUserSettings,
 	fetchProjectData,
@@ -11,88 +12,18 @@ import {
 	pinProjectVersion,
 } from '@/lib/supabase/db'
 import type { Task, WorkflowData } from '@/types/project'
-import type { AIGenerateOutput } from '@/lib/ai-schema'
+import type { PRDContent, PartialAIGenerateOutput, AIGenerateOutput } from '@/lib/ai-schema'
 import type { ProjectStore, AISlice } from '../types'
-import { emptyWorkflow } from '../types'
-
-const runGenerate = async (
-	idea: string,
-	projectId: string,
-	embedding: number[],
-	apiKey: string,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	set: (partial: any) => void,
-) => {
-	try {
-		const { data: output } = await axios.post<AIGenerateOutput>(
-			'/api/generate',
-			{ idea },
-			{ headers: { Authorization: `Bearer ${apiKey}` } },
-		)
-
-		const tasks: Task[] = output.tasks.map((task) => ({
-			id: uuidv4(),
-			label: task.label,
-			priority: task.priority,
-			done: false,
-		}))
-
-		const workflow: WorkflowData = {
-			roleAName: output.workflow.roleAName,
-			roleBName: output.workflow.roleBName,
-			steps: output.workflow.steps.map((step) => ({
-				id: uuidv4(),
-				roleAStep: step.roleAStep,
-				roleBStep: step.roleBStep,
-			})),
-		}
-
-		const suggestions = output.suggestions.map((s) => ({
-			...s,
-			id: uuidv4(),
-		}))
-
-		const originVersion = buildVersion(idea, tasks, workflow, true, {
-			prd: output.prd,
-			phases: output.phases,
-			suggestions,
-		})
-
-		// 寫入版本至資料庫，預設首個原始版本排序為 0
-		await saveNewVersion(projectId, originVersion, 0)
-		// 更新專案 Pinned Version ID 與 Embedding 向量
-		await pinProjectVersion(projectId, originVersion.id)
-		await updateProjectMeta(projectId, {
-			embedding,
-		})
-
-		set({
-			tasks,
-			workflow,
-			prd: output.prd,
-			phases: output.phases,
-			suggestions,
-			submitted: true,
-			isDirty: false,
-			versions: [originVersion],
-			activeVersionId: originVersion.id,
-			pinnedVersionId: originVersion.id,
-		})
-	} catch (err) {
-		const errorMessage = axios.isAxiosError(err)
-			? (err.response?.data?.error ?? 'AI 生成失敗，請稍後再試')
-			: '網路錯誤，請稍後再試'
-		set({ generateError: errorMessage })
-	} finally {
-		set({ loading: false })
-	}
-}
 
 export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, get) => ({
 	loading: false,
+	isStreaming: false,
 	generateError: null,
 	validationError: null,
 	similarProject: null,
+	pendingIdea: null,
+	pendingApiKey: null,
+	pendingEmbedding: null,
 
 	generate: async () => {
 		const { idea, loading, submitted, projectId } = get()
@@ -147,7 +78,12 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			return
 		}
 
-		await runGenerate(idea, projectId, preCheck.embedding, apiKey, set)
+		set({
+			pendingIdea: idea,
+			pendingApiKey: apiKey,
+			pendingEmbedding: preCheck.embedding,
+			isStreaming: true,
+		})
 	},
 
 	clearGenerateError: () => {
@@ -200,13 +136,176 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	},
 
 	forceGenerate: async () => {
-		const { idea, projectId, similarProject } = get()
+		const { idea, similarProject } = get()
 		const apiKey = await fetchUserSettings()
 
 		if (!apiKey?.trim() || !similarProject) return
 
-		const embedding = similarProject.currentEmbedding
-		set({ loading: true, similarProject: null, generateError: null })
-		await runGenerate(idea, projectId, embedding, apiKey, set)
+		set({
+			loading: true,
+			similarProject: null,
+			generateError: null,
+			pendingIdea: idea,
+			pendingApiKey: apiKey,
+			pendingEmbedding: similarProject.currentEmbedding,
+			isStreaming: true,
+		})
+	},
+
+	clearPendingIdea: () => {
+		set({ pendingIdea: null })
+	},
+
+	applyStreamingPartial: (partial: PartialAIGenerateOutput) => {
+		const prd: PRDContent | null = partial.prd
+			? {
+					tagline: partial.prd.tagline ?? '',
+					overview: partial.prd.overview ?? '',
+					productGoal: partial.prd.productGoal ?? '',
+					sectionLabels: {
+						userPersonas: partial.prd.sectionLabels?.userPersonas ?? '',
+						features: partial.prd.sectionLabels?.features ?? '',
+						systemModules: partial.prd.sectionLabels?.systemModules ?? '',
+						dataModels: partial.prd.sectionLabels?.dataModels ?? '',
+						valuePropositions: partial.prd.sectionLabels?.valuePropositions ?? '',
+					},
+					userPersonas: (partial.prd.userPersonas ?? []).map((person) => ({
+						name: person?.name ?? '',
+						description: person?.description ?? '',
+					})),
+					features: (partial.prd.features ?? []).map((feature) => ({
+						name: feature?.name ?? '',
+						description: feature?.description ?? '',
+						icon: feature?.icon ?? '',
+					})),
+					systemModules: (partial.prd.systemModules ?? []).map((module) => ({
+						name: module?.name ?? '',
+						description: module?.description ?? '',
+					})),
+					dataModels: (partial.prd.dataModels ?? []).map((model) => ({
+						name: model?.name ?? '',
+						description: model?.description ?? '',
+					})),
+					valuePropositions: (partial.prd.valuePropositions ?? []).map((proposition) => proposition ?? ''),
+				}
+			: null
+
+		// 串流中的陣列項目尚未有正式 id，先用 index 產生暫時 id 當作 react key
+		const tasks: Task[] = (partial.tasks ?? []).map((task, index) => ({
+			id: `stream-${index}`,
+			label: task?.label ?? '',
+			priority: task?.priority ?? 'Medium',
+			done: false,
+		}))
+
+		const workflow: WorkflowData = partial.workflow
+			? {
+					roleAName: partial.workflow.roleAName ?? '',
+					roleBName: partial.workflow.roleBName ?? '',
+					steps: (partial.workflow.steps ?? []).map((step, index) => ({
+						id: `stream-${index}`,
+						roleAStep: step?.roleAStep ?? '',
+						roleBStep: step?.roleBStep ?? '',
+					})),
+				}
+			: emptyWorkflow
+
+		const phases = (partial.phases ?? []).map((phase) => ({
+			name: phase?.name ?? '',
+			timeframe: phase?.timeframe ?? '',
+			goal: phase?.goal ?? '',
+			deliverables: (phase?.deliverables ?? []).map((deliverable) => deliverable ?? ''),
+			successMetrics: (phase?.successMetrics ?? []).map((metric) => metric ?? ''),
+		}))
+
+		const suggestions = (partial.suggestions ?? []).map((suggest) => ({
+			category: suggest?.category ?? '',
+			title: suggest?.title ?? '',
+			description: suggest?.description ?? '',
+			actionItems: (suggest?.actionItems ?? []).map((item) => item ?? ''),
+			impact: suggest?.impact ?? 'Medium',
+		}))
+
+		set({ prd, tasks, workflow, phases, suggestions })
+	},
+
+	finalizeGenerate: async (output: AIGenerateOutput) => {
+		const { pendingIdea, idea, projectId, pendingEmbedding } = get()
+		const effectiveIdea = pendingIdea ?? idea
+
+		try {
+			const tasks: Task[] = output.tasks.map((task) => ({
+				id: uuidv4(),
+				label: task.label,
+				priority: task.priority,
+				done: false,
+			}))
+
+			const workflow: WorkflowData = {
+				roleAName: output.workflow.roleAName,
+				roleBName: output.workflow.roleBName,
+				steps: output.workflow.steps.map((step) => ({
+					id: uuidv4(),
+					roleAStep: step.roleAStep,
+					roleBStep: step.roleBStep,
+				})),
+			}
+
+			const suggestions = output.suggestions.map((s) => ({
+				...s,
+				id: uuidv4(),
+			}))
+
+			const originVersion = buildVersion(effectiveIdea, tasks, workflow, true, {
+				prd: output.prd,
+				phases: output.phases,
+				suggestions,
+			})
+
+			// 寫入版本至資料庫，預設首個原始版本排序為 0
+			await saveNewVersion(projectId, originVersion, 0)
+			// 更新專案 Pinned Version ID 與 Embedding 向量
+			await pinProjectVersion(projectId, originVersion.id)
+			await updateProjectMeta(projectId, {
+				embedding: pendingEmbedding ?? [],
+			})
+
+			set({
+				tasks,
+				workflow,
+				prd: output.prd,
+				phases: output.phases,
+				suggestions,
+				submitted: true,
+				isDirty: false,
+				versions: [originVersion],
+				activeVersionId: originVersion.id,
+				pinnedVersionId: originVersion.id,
+			})
+		} catch (err) {
+			const errorMessage = axios.isAxiosError(err)
+				? (err.response?.data?.error ?? 'AI 生成失敗，請稍後再試')
+				: '生成結果儲存失敗，請稍後再試'
+			set({ generateError: errorMessage })
+		} finally {
+			set({
+				loading: false,
+				isStreaming: false,
+				pendingIdea: null,
+				pendingApiKey: null,
+				pendingEmbedding: null,
+			})
+		}
+	},
+
+	handleStreamError: (message: string) => {
+		set({
+			generateError: message,
+			loading: false,
+			isStreaming: false,
+			pendingIdea: null,
+			pendingApiKey: null,
+			pendingEmbedding: null,
+		})
 	},
 })

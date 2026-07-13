@@ -1,7 +1,7 @@
 'use client'
 
 import cx from 'classnames'
-import { useState, useRef, useEffect } from 'react'
+import { memo, useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { WorkflowStep } from '@/types/project'
@@ -16,7 +16,7 @@ interface WorkflowItemProps {
 
 type EditField = 'roleAStep' | 'roleBStep' | null
 
-export const WorkflowItem = ({ step, index, isLast, onUpdate, onDelete }: WorkflowItemProps) => {
+export const WorkflowItem = memo(({ step, index, isLast, onUpdate, onDelete }: WorkflowItemProps) => {
 	const [editField, setEditField] = useState<EditField>(null)
 	const [editValue, setEditValue] = useState('')
 
@@ -118,4 +118,6 @@ export const WorkflowItem = ({ step, index, isLast, onUpdate, onDelete }: Workfl
 			</div>
 		</div>
 	)
-}
+})
+
+WorkflowItem.displayName = 'WorkflowItem'

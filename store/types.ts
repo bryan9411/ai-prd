@@ -1,5 +1,5 @@
 import type { Task, WorkflowData, ProjectVersion, ProjectMeta } from '@/types/project'
-import type { PRDContent, AIPhase, AISuggestion } from '@/lib/ai-schema'
+import type { PRDContent, AIPhase, AISuggestion, AIGenerateOutput, PartialAIGenerateOutput } from '@/lib/ai-schema'
 
 export interface ProjectSlice {
 	projectId: string
@@ -12,14 +12,23 @@ export interface ProjectSlice {
 
 export interface AISlice {
 	loading: boolean
+	isStreaming: boolean
 	generateError: string | null
 	validationError: string | null
 	similarProject: { meta: ProjectMeta; similarity: number; currentEmbedding: number[] } | null
+	// 串流生成期間暫存的資料
+	pendingIdea: string | null
+	pendingApiKey: string | null
+	pendingEmbedding: number[] | null
 	generate: () => Promise<void>
 	clearGenerateError: () => void
 	clearValidationError: () => void
 	loadSimilarProject: () => Promise<void>
 	forceGenerate: () => Promise<void>
+	clearPendingIdea: () => void
+	applyStreamingPartial: (partial: PartialAIGenerateOutput) => void
+	finalizeGenerate: (output: AIGenerateOutput) => Promise<void>
+	handleStreamError: (message: string) => void
 }
 
 export interface ContentSlice {
@@ -51,6 +60,7 @@ export const emptyWorkflow: WorkflowData = { roleAName: '', roleBName: '', steps
 export const emptyState = {
 	submitted: false,
 	loading: false,
+	isStreaming: false,
 	idea: '',
 	tasks: [] as Task[],
 	workflow: emptyWorkflow,
@@ -65,4 +75,7 @@ export const emptyState = {
 	generateError: null as string | null,
 	validationError: null as string | null,
 	similarProject: null as { meta: ProjectMeta; similarity: number; currentEmbedding: number[] } | null,
+	pendingIdea: null as string | null,
+	pendingApiKey: null as string | null,
+	pendingEmbedding: null as number[] | null,
 }

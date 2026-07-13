@@ -66,6 +66,7 @@ export const TabPanel = () => {
 	const [activeTab, setActiveTab] = useState<TabId>('prd')
 
 	const submitted = useProjectStore((state) => state.submitted)
+	const isStreaming = useProjectStore((state) => state.isStreaming)
 	const generateError = useProjectStore((state) => state.generateError)
 	const clearGenerateError = useProjectStore((state) => state.clearGenerateError)
 
@@ -92,7 +93,8 @@ export const TabPanel = () => {
 		})
 
 	const renderTabContent = () => {
-		if (!submitted) return <EmptyState currentTab={currentTab} error={generateError} onDismiss={clearGenerateError} />
+		if (!submitted && !isStreaming)
+			return <EmptyState currentTab={currentTab} error={generateError} onDismiss={clearGenerateError} />
 
 		return (
 			<>

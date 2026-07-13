@@ -24,7 +24,7 @@ export const PhasesContent = () => {
 	const renderPhaseCard = () => {
 		return phases.map((phase, index) => (
 			<div
-				key={phase.name}
+				key={index}
 				className='rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden'
 			>
 				<div className='flex items-center gap-3 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60'>

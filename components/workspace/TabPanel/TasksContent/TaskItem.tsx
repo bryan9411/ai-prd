@@ -1,7 +1,7 @@
 'use client'
 
 import cx from 'classnames'
-import { useState, useRef, useEffect } from 'react'
+import { memo, useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
@@ -23,7 +23,7 @@ const priorityStripStyle: Record<Priority, string> = {
 	Low: 'bg-neutral-300 dark:bg-neutral-500',
 }
 
-export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) => {
+export const TaskItem = memo(({ task, onToggle, onUpdate, onDelete }: TaskItemProps) => {
 	const [isEditing, setIsEditing] = useState(false)
 	const [editLabel, setEditLabel] = useState(task.label)
 	const [editPriority, setEditPriority] = useState<Priority>(task.priority)
@@ -151,4 +151,6 @@ export const TaskItem = ({ task, onToggle, onUpdate, onDelete }: TaskItemProps) 
 			{isEditing ? renderEditMode() : renderViewMode()}
 		</div>
 	)
-}
+})
+
+TaskItem.displayName = 'TaskItem'

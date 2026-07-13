@@ -27,9 +27,9 @@ export const PrdContent = () => {
 	} = prd
 
 	const renderUserPersona = () => {
-		return userPersonas.map((persona) => (
+		return userPersonas.map((persona, index) => (
 			<div
-				key={persona.name}
+				key={index}
 				className='rounded-lg bg-card border-l-2 border-primary/25 hover:border-primary px-4 py-3 transition-colors shadow-sm'
 			>
 				<p className='text-xs font-semibold text-primary mb-0.5'>{persona.name}</p>
@@ -39,9 +39,9 @@ export const PrdContent = () => {
 	}
 
 	const renderFeatures = () => {
-		return features.map((feature) => (
+		return features.map((feature, index) => (
 			<div
-				key={feature.name}
+				key={index}
 				className='rounded-lg bg-card border border-border border-t-2 border-t-transparent hover:border-t-primary p-3.5 transition-all shadow-sm'
 			>
 				<div className='text-xl mb-2'>{feature.icon}</div>
@@ -54,7 +54,7 @@ export const PrdContent = () => {
 	const renderSystemModules = () => {
 		return systemModules.map((module, index) => (
 			<div
-				key={module.name}
+				key={index}
 				className='flex items-start gap-3 rounded-lg bg-card border border-border px-3.5 py-3 shadow-sm'
 			>
 				<span className='shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center mt-0.5'>
@@ -71,9 +71,9 @@ export const PrdContent = () => {
 	}
 
 	const renderDataModels = () => {
-		return dataModels.map((model) => (
+		return dataModels.map((model, index) => (
 			<div
-				key={model.name}
+				key={index}
 				className='rounded-lg bg-card border-l-2 border-primary/30 px-3 py-2 shadow-sm'
 				title={model.description}
 			>
