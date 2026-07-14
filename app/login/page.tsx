@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 
@@ -13,7 +12,7 @@ export default function LoginPage() {
 
 	const handleSuccess = () => {
 		if (mode === 'register') {
-			setMessage('註冊成功！若有啟用信箱驗證，請至信箱收信啟用帳號後登入。')
+			setMessage('註冊成功！請使用新帳號登入')
 			setMode('login')
 		} else {
 			router.push('/')

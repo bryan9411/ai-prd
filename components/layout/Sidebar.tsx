@@ -227,9 +227,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 					<div className='w-6 h-6 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/20'>
 						<span className='text-primary-foreground text-[11px] font-black tracking-tight'>P</span>
 					</div>
-					<span className='text-sm font-semibold text-sidebar-foreground tracking-tighter'>
-						PRD 產生器
-					</span>
+					<span className='text-sm font-semibold text-sidebar-foreground tracking-tighter'>產品需求平台</span>
 				</div>
 
 				{/* ── 主導覽 ── */}
@@ -239,9 +237,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 				{/* ── PRD 專案列表 ── */}
 				<div className='px-2 flex-1 min-h-0 overflow-y-auto'>
 					<div className='flex items-center justify-between px-2.5 mb-1.5'>
-						<span className='text-[10px] font-bold text-sidebar-foreground/50 uppercase tracking-widest'>
-							專案列表
-						</span>
+						<span className='text-[10px] font-bold text-sidebar-foreground/50 uppercase tracking-widest'>專案列表</span>
 						<Button
 							variant='ghost'
 							size='icon'
