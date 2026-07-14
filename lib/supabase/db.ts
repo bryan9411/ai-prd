@@ -1,9 +1,18 @@
 import { createClient } from './client'
 import { v4 as uuidv4 } from 'uuid'
 import type { Task, WorkflowData, ProjectVersion, ProjectMeta, ProjectData, Priority } from '@/types/project'
-import type { PRDContent, AIPhase, AISuggestion, SectionLabels, UserPersona, Feature, SystemModule, DataModel } from '@/lib/ai-schema'
+import type {
+	PRDContent,
+	AIPhase,
+	AISuggestion,
+	SectionLabels,
+	UserPersona,
+	Feature,
+	SystemModule,
+	DataModel,
+} from '@/lib/ai-schema'
 
-// 1. 取得專案列表
+// 取得目前使用者的所有專案列表
 export async function fetchProjects(): Promise<ProjectMeta[]> {
 	const supabase = createClient()
 	const { data, error } = await supabase
@@ -21,7 +30,7 @@ export async function fetchProjects(): Promise<ProjectMeta[]> {
 	}))
 }
 
-// 2. 建立新專案
+// 建立新專案
 export async function createProject(name: string, color: string): Promise<ProjectMeta> {
 	const supabase = createClient()
 	const {
@@ -44,7 +53,7 @@ export async function createProject(name: string, color: string): Promise<Projec
 	return data
 }
 
-// 3. 刪除專案 (會觸發 CASCADE 刪除所有版本與項目)
+// 刪除專案（資料庫端有設 CASCADE，會自動一併刪除關聯的所有 versions 與 tasks）
 export async function deleteProject(projectId: string): Promise<void> {
 	const supabase = createClient()
 	const { error } = await supabase.from('projects').delete().eq('id', projectId)
@@ -52,7 +61,7 @@ export async function deleteProject(projectId: string): Promise<void> {
 	if (error) throw error
 }
 
-// 4. 更新專案中繼資料 (例如 Embedding)
+// 更新專案的 Embedding 向量或基本設定
 export async function updateProjectMeta(projectId: string, patch: Partial<Omit<ProjectMeta, 'id'>>): Promise<void> {
 	const supabase = createClient()
 	const { error } = await supabase.from('projects').update(patch).eq('id', projectId)
@@ -60,38 +69,40 @@ export async function updateProjectMeta(projectId: string, patch: Partial<Omit<P
 	if (error) throw error
 }
 
-// 5. 載入特定專案的所有版本與細節
+/**
+ * 載入特定專案的所有歷史版本與關聯資料 (PRD, Tasks, Workflows 等)
+ */
 export async function fetchProjectData(projectId: string): Promise<ProjectData | null> {
 	const supabase = createClient()
 
-	// 取得專案及釘選版本 ID
-	const { data: project, error: pError } = await supabase
+	const { data: project, error: projectError } = await supabase
 		.from('projects')
 		.select('pinned_version_id')
 		.eq('id', projectId)
 		.single()
 
-	if (pError) {
-		if (pError.code === 'PGRST116') return null // 找不到專案
-		throw pError
+	if (projectError) {
+		if (projectError.code === 'PGRST116') return null
+		throw projectError
 	}
 	if (!project) return null
 
-	// 取得所有版本
-	const { data: dbVersions, error: vError } = await supabase
+	const { data: dbVersions, error: versionsError } = await supabase
 		.from('project_versions')
 		.select('*')
 		.eq('project_id', projectId)
 		.order('sort_order', { ascending: true })
 
-	if (vError) throw vError
+	if (versionsError) {
+		throw versionsError
+	}
+
 	if (!dbVersions || dbVersions.length === 0) {
 		return { versions: [], pinnedVersionId: project.pinned_version_id ?? undefined }
 	}
 
-	const versionIds = dbVersions.map((v) => v.id)
+	const versionIds = dbVersions.map((version) => version.id)
 
-	// 平行載入所有版本細節
 	const [
 		{ data: dbTasks },
 		{ data: dbWorkflows },
@@ -106,8 +117,7 @@ export async function fetchProjectData(projectId: string): Promise<ProjectData |
 		supabase.from('suggestions').select('*').in('version_id', versionIds).order('sort_order', { ascending: true }),
 	])
 
-	// 平行載入工作流程步驟
-	const workflowIds = dbWorkflows?.map((w) => w.id) || []
+	const workflowIds = dbWorkflows?.map((workflow) => workflow.id) || []
 	const { data: dbWorkflowSteps } =
 		workflowIds.length > 0
 			? await supabase
@@ -117,40 +127,37 @@ export async function fetchProjectData(projectId: string): Promise<ProjectData |
 					.order('sort_order', { ascending: true })
 			: { data: [] }
 
-	// 組裝回原先的 ProjectVersion[] 架構
-	const versions: ProjectVersion[] = dbVersions.map((v) => {
-		// 1. 任務列表
+	// 把各個子表撈出來的 Raw Data，依照 version_id 重新組裝回 versions
+	const versions: ProjectVersion[] = dbVersions.map((version) => {
 		const tasks: Task[] = (dbTasks || [])
-			.filter((t) => t.version_id === v.id)
-			.map((t) => ({
-				id: t.id,
-				label: t.label,
-				priority: t.priority as Priority,
-				done: t.done,
-				readonly: t.readonly,
-				suggestionId: t.suggestion_id ?? undefined,
+			.filter((task) => task.version_id === version.id)
+			.map((task) => ({
+				id: task.id,
+				label: task.label,
+				priority: task.priority as Priority,
+				done: task.done,
+				readonly: task.readonly,
+				suggestionId: task.suggestion_id ?? undefined,
 			}))
 
-		// 2. 工作流程
-		const wf = (dbWorkflows || []).find((w) => w.version_id === v.id)
+		const currentWorkflow = (dbWorkflows || []).find((workflow) => workflow.version_id === version.id)
 		let workflow: WorkflowData = { roleAName: '', roleBName: '', steps: [] }
-		if (wf) {
+		if (currentWorkflow) {
 			const steps = (dbWorkflowSteps || [])
-				.filter((s) => s.workflow_id === wf.id)
-				.map((s) => ({
-					id: s.id,
-					roleAStep: s.role_a_step,
-					roleBStep: s.role_b_step,
+				.filter((step) => step.workflow_id === currentWorkflow.id)
+				.map((step) => ({
+					id: step.id,
+					roleAStep: step.role_a_step,
+					roleBStep: step.role_b_step,
 				}))
 			workflow = {
-				roleAName: wf.role_a_name,
-				roleBName: wf.role_b_name,
+				roleAName: currentWorkflow.role_a_name,
+				roleBName: currentWorkflow.role_b_name,
 				steps,
 			}
 		}
 
-		// 3. PRD 內容
-		const prdRaw = (dbPrdContents || []).find((p) => p.version_id === v.id)
+		const prdRaw = (dbPrdContents || []).find((prd) => prd.version_id === version.id)
 		let prd: PRDContent | undefined = undefined
 		if (prdRaw) {
 			prd = {
@@ -166,34 +173,32 @@ export async function fetchProjectData(projectId: string): Promise<ProjectData |
 			}
 		}
 
-		// 4. 開發階段
 		const phases: AIPhase[] = (dbPhases || [])
-			.filter((p) => p.version_id === v.id)
-			.map((p) => ({
-				name: p.name,
-				timeframe: p.timeframe,
-				goal: p.goal,
-				deliverables: p.deliverables as unknown as string[],
-				successMetrics: p.success_metrics as unknown as string[],
+			.filter((phase) => phase.version_id === version.id)
+			.map((phase) => ({
+				name: phase.name,
+				timeframe: phase.timeframe,
+				goal: phase.goal,
+				deliverables: phase.deliverables as unknown as string[],
+				successMetrics: phase.success_metrics as unknown as string[],
 			}))
 
-		// 5. AI 建議
 		const suggestions: AISuggestion[] = (dbSuggestions || [])
-			.filter((s) => s.version_id === v.id)
-			.map((s) => ({
-				category: s.category,
-				title: s.title,
-				description: s.description,
-				actionItems: s.action_items as unknown as string[],
-				impact: s.impact as 'High' | 'Medium' | 'Low',
+			.filter((suggestion) => suggestion.version_id === version.id)
+			.map((suggestion) => ({
+				category: suggestion.category,
+				title: suggestion.title,
+				description: suggestion.description,
+				actionItems: suggestion.action_items as unknown as string[],
+				impact: suggestion.impact as 'High' | 'Medium' | 'Low',
 			}))
 
 		return {
-			id: v.id,
-			timestamp: new Date(v.created_at).getTime(),
-			label: v.label,
-			isOrigin: v.is_origin,
-			idea: v.idea,
+			id: version.id,
+			timestamp: new Date(version.created_at).getTime(),
+			label: version.label,
+			isOrigin: version.is_origin,
+			idea: version.idea,
 			tasks,
 			workflow,
 			prd,
@@ -208,32 +213,30 @@ export async function fetchProjectData(projectId: string): Promise<ProjectData |
 	}
 }
 
-// 6. 寫入全新的版本與相關項目
+// 儲存新版本與關聯細節到 Supabase 資料庫
 export async function saveNewVersion(projectId: string, version: ProjectVersion, sortOrder: number): Promise<void> {
 	const supabase = createClient()
 
-	// 建立 suggestionId 映射表
 	const suggestionIdMap = new Map<string, string>()
-	const suggestionsToInsert = (version.suggestions || []).map((s, idx) => {
-		const sId = s.id || uuidv4()
+	const suggestionsToInsert = (version.suggestions || []).map((suggestion, idx) => {
+		const sId = suggestion.id || uuidv4()
 		suggestionIdMap.set(`ai_s_${idx}`, sId)
-		if (s.id) {
-			suggestionIdMap.set(s.id, sId)
+		if (suggestion.id) {
+			suggestionIdMap.set(suggestion.id, sId)
 		}
 		return {
 			id: sId,
 			version_id: version.id,
-			category: s.category,
-			title: s.title,
-			description: s.description,
-			action_items: s.actionItems,
-			impact: s.impact,
+			category: suggestion.category,
+			title: suggestion.title,
+			description: suggestion.description,
+			action_items: suggestion.actionItems,
+			impact: suggestion.impact,
 			sort_order: idx,
 		}
 	})
 
-	// ① 寫入版本主表
-	const { error: vError } = await supabase.from('project_versions').insert({
+	const { error: versionError } = await supabase.from('project_versions').insert({
 		id: version.id,
 		project_id: projectId,
 		label: version.label,
@@ -243,35 +246,35 @@ export async function saveNewVersion(projectId: string, version: ProjectVersion,
 		created_at: new Date(version.timestamp).toISOString(),
 	})
 
-	if (vError) throw vError
+	if (versionError) throw versionError
 
-	// ② 寫入任務
+	// 寫入任務
 	if (version.tasks.length > 0) {
-		const tasksToInsert = version.tasks.map((t, idx) => {
-			let sId = t.suggestionId || null
+		const tasksToInsert = version.tasks.map((task, idx) => {
+			let sId = task.suggestionId || null
 			if (sId && suggestionIdMap.has(sId)) {
 				sId = suggestionIdMap.get(sId)!
 			} else if (sId && !sId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
 				sId = null
 			}
 			return {
-				id: t.id,
+				id: task.id,
 				version_id: version.id,
-				label: t.label,
-				priority: t.priority,
-				done: t.done,
-				readonly: t.readonly || false,
+				label: task.label,
+				priority: task.priority,
+				done: task.done,
+				readonly: task.readonly || false,
 				suggestion_id: sId,
 				sort_order: idx,
 			}
 		})
-		const { error: tError } = await supabase.from('tasks').insert(tasksToInsert)
-		if (tError) throw tError
+		const { error: tasksError } = await supabase.from('tasks').insert(tasksToInsert)
+		if (tasksError) throw tasksError
 	}
 
-	// ③ 寫入工作流程與步驟
+	// 寫入工作流程與步驟
 	if (version.workflow && (version.workflow.roleAName || version.workflow.roleBName)) {
-		const { data: wf, error: wError } = await supabase
+		const { data: dbWorkflow, error: workflowError } = await supabase
 			.from('workflows')
 			.insert({
 				version_id: version.id,
@@ -281,24 +284,24 @@ export async function saveNewVersion(projectId: string, version: ProjectVersion,
 			.select('id')
 			.single()
 
-		if (wError) throw wError
+		if (workflowError) throw workflowError
 
-		if (wf && version.workflow.steps.length > 0) {
-			const stepsToInsert = version.workflow.steps.map((s, idx) => ({
-				id: s.id,
-				workflow_id: wf.id,
-				role_a_step: s.roleAStep,
-				role_b_step: s.roleBStep,
+		if (dbWorkflow && version.workflow.steps.length > 0) {
+			const stepsToInsert = version.workflow.steps.map((step, idx) => ({
+				id: step.id,
+				workflow_id: dbWorkflow.id,
+				role_a_step: step.roleAStep,
+				role_b_step: step.roleBStep,
 				sort_order: idx,
 			}))
-			const { error: sError } = await supabase.from('workflow_steps').insert(stepsToInsert)
-			if (sError) throw sError
+			const { error: stepsError } = await supabase.from('workflow_steps').insert(stepsToInsert)
+			if (stepsError) throw stepsError
 		}
 	}
 
-	// ④ 寫入 PRD 內容
+	// 寫入 PRD 內容
 	if (version.prd) {
-		const { error: pError } = await supabase.from('prd_contents').insert({
+		const { error: prdError } = await supabase.from('prd_contents').insert({
 			version_id: version.id,
 			tagline: version.prd.tagline,
 			overview: version.prd.overview,
@@ -310,32 +313,32 @@ export async function saveNewVersion(projectId: string, version: ProjectVersion,
 			data_models: version.prd.dataModels,
 			value_propositions: version.prd.valuePropositions,
 		})
-		if (pError) throw pError
+		if (prdError) throw prdError
 	}
 
-	// ⑤ 寫入開發階段
+	// 寫入開發階段
 	if (version.phases && version.phases.length > 0) {
-		const phasesToInsert = version.phases.map((p, idx) => ({
+		const phasesToInsert = version.phases.map((phase, idx) => ({
 			version_id: version.id,
-			name: p.name,
-			timeframe: p.timeframe,
-			goal: p.goal,
-			deliverables: p.deliverables,
-			success_metrics: p.successMetrics,
+			name: phase.name,
+			timeframe: phase.timeframe,
+			goal: phase.goal,
+			deliverables: phase.deliverables,
+			success_metrics: phase.successMetrics,
 			sort_order: idx,
 		}))
-		const { error: phError } = await supabase.from('phases').insert(phasesToInsert)
-		if (phError) throw phError
+		const { error: phasesError } = await supabase.from('phases').insert(phasesToInsert)
+		if (phasesError) throw phasesError
 	}
 
-	// ⑥ 寫入建議
+	// 寫入建議
 	if (suggestionsToInsert.length > 0) {
-		const { error: suError } = await supabase.from('suggestions').insert(suggestionsToInsert)
-		if (suError) throw suError
+		const { error: suggestionsError } = await supabase.from('suggestions').insert(suggestionsToInsert)
+		if (suggestionsError) throw suggestionsError
 	}
 }
 
-// 7. 覆寫現有版本細節
+// 覆寫指定版本的內容
 export async function overwriteVersion(
 	versionId: string,
 	idea: string,
@@ -349,32 +352,31 @@ export async function overwriteVersion(
 ): Promise<void> {
 	const supabase = createClient()
 
-	// 建立 suggestionId 映射表
 	const suggestionIdMap = new Map<string, string>()
-	const suggestionsToInsert = (details.suggestions || []).map((s, idx) => {
-		const sId = s.id || uuidv4()
+	const suggestionsToInsert = (details.suggestions || []).map((suggestion, idx) => {
+		const sId = suggestion.id || uuidv4()
 		suggestionIdMap.set(`ai_s_${idx}`, sId)
-		if (s.id) {
-			suggestionIdMap.set(s.id, sId)
+		if (suggestion.id) {
+			suggestionIdMap.set(suggestion.id, sId)
 		}
 		return {
 			id: sId,
 			version_id: versionId,
-			category: s.category,
-			title: s.title,
-			description: s.description,
-			action_items: s.actionItems,
-			impact: s.impact,
+			category: suggestion.category,
+			title: suggestion.title,
+			description: suggestion.description,
+			action_items: suggestion.actionItems,
+			impact: suggestion.impact,
 			sort_order: idx,
 		}
 	})
 
-	// ① 更新版本主表中的 Idea
-	const { error: vError } = await supabase.from('project_versions').update({ idea }).eq('id', versionId)
+	// 更新版本主表中的 Idea
+	const { error: versionError } = await supabase.from('project_versions').update({ idea }).eq('id', versionId)
 
-	if (vError) throw vError
+	if (versionError) throw versionError
 
-	// ② 刪除此版本原先的所有細節，採用重新插入的方式更新
+	// 先清除舊的關聯資料，再重新寫入，避免處理複雜的 Diff 比對
 	await Promise.all([
 		supabase.from('tasks').delete().eq('version_id', versionId),
 		supabase.from('workflows').delete().eq('version_id', versionId),
@@ -383,33 +385,33 @@ export async function overwriteVersion(
 		supabase.from('suggestions').delete().eq('version_id', versionId),
 	])
 
-	// ③ 重新寫入任務
+	// 重新寫入任務
 	if (tasks.length > 0) {
-		const tasksToInsert = tasks.map((t, idx) => {
-			let sId = t.suggestionId || null
+		const tasksToInsert = tasks.map((task, idx) => {
+			let sId = task.suggestionId || null
 			if (sId && suggestionIdMap.has(sId)) {
 				sId = suggestionIdMap.get(sId)!
 			} else if (sId && !sId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
 				sId = null
 			}
 			return {
-				id: t.id,
+				id: task.id,
 				version_id: versionId,
-				label: t.label,
-				priority: t.priority,
-				done: t.done,
-				readonly: t.readonly || false,
+				label: task.label,
+				priority: task.priority,
+				done: task.done,
+				readonly: task.readonly || false,
 				suggestion_id: sId,
 				sort_order: idx,
 			}
 		})
-		const { error: tError } = await supabase.from('tasks').insert(tasksToInsert)
-		if (tError) throw tError
+		const { error: tasksError } = await supabase.from('tasks').insert(tasksToInsert)
+		if (tasksError) throw tasksError
 	}
 
-	// ④ 重新寫入工作流程
+	// 重新寫入工作流程
 	if (workflow && (workflow.roleAName || workflow.roleBName)) {
-		const { data: wf, error: wError } = await supabase
+		const { data: dbWorkflow, error: workflowError } = await supabase
 			.from('workflows')
 			.insert({
 				version_id: versionId,
@@ -419,24 +421,24 @@ export async function overwriteVersion(
 			.select('id')
 			.single()
 
-		if (wError) throw wError
+		if (workflowError) throw workflowError
 
-		if (wf && workflow.steps.length > 0) {
-			const stepsToInsert = workflow.steps.map((s, idx) => ({
-				id: s.id,
-				workflow_id: wf.id,
-				role_a_step: s.roleAStep,
-				role_b_step: s.roleBStep,
+		if (dbWorkflow && workflow.steps.length > 0) {
+			const stepsToInsert = workflow.steps.map((step, idx) => ({
+				id: step.id,
+				workflow_id: dbWorkflow.id,
+				role_a_step: step.roleAStep,
+				role_b_step: step.roleBStep,
 				sort_order: idx,
 			}))
-			const { error: sError } = await supabase.from('workflow_steps').insert(stepsToInsert)
-			if (sError) throw sError
+			const { error: stepsError } = await supabase.from('workflow_steps').insert(stepsToInsert)
+			if (stepsError) throw stepsError
 		}
 	}
 
-	// ⑤ 重新寫入 PRD 內容
+	// 重新寫入 PRD 內容
 	if (details.prd) {
-		const { error: pError } = await supabase.from('prd_contents').insert({
+		const { error: prdError } = await supabase.from('prd_contents').insert({
 			version_id: versionId,
 			tagline: details.prd.tagline,
 			overview: details.prd.overview,
@@ -448,32 +450,32 @@ export async function overwriteVersion(
 			data_models: details.prd.dataModels,
 			value_propositions: details.prd.valuePropositions,
 		})
-		if (pError) throw pError
+		if (prdError) throw prdError
 	}
 
-	// ⑥ 重新寫入開發階段
+	// 重新寫入開發階段
 	if (details.phases && details.phases.length > 0) {
-		const phasesToInsert = details.phases.map((p, idx) => ({
+		const phasesToInsert = details.phases.map((phase, idx) => ({
 			version_id: versionId,
-			name: p.name,
-			timeframe: p.timeframe,
-			goal: p.goal,
-			deliverables: p.deliverables,
-			success_metrics: p.successMetrics,
+			name: phase.name,
+			timeframe: phase.timeframe,
+			goal: phase.goal,
+			deliverables: phase.deliverables,
+			success_metrics: phase.successMetrics,
 			sort_order: idx,
 		}))
-		const { error: phError } = await supabase.from('phases').insert(phasesToInsert)
-		if (phError) throw phError
+		const { error: phasesError } = await supabase.from('phases').insert(phasesToInsert)
+		if (phasesError) throw phasesError
 	}
 
-	// ⑦ 重新寫入建議
+	// 重新寫入建議
 	if (suggestionsToInsert.length > 0) {
-		const { error: suError } = await supabase.from('suggestions').insert(suggestionsToInsert)
-		if (suError) throw suError
+		const { error: suggestionsError } = await supabase.from('suggestions').insert(suggestionsToInsert)
+		if (suggestionsError) throw suggestionsError
 	}
 }
 
-// 8. 釘選版本
+// 釘選指定版本為專案的預設載入版本
 export async function pinProjectVersion(projectId: string, versionId: string): Promise<void> {
 	const supabase = createClient()
 	const { error } = await supabase.from('projects').update({ pinned_version_id: versionId }).eq('id', projectId)
@@ -481,7 +483,7 @@ export async function pinProjectVersion(projectId: string, versionId: string): P
 	if (error) throw error
 }
 
-// 9. 讀取 API Key 設定
+// 取得使用者的 OpenAI API Key 設定
 export async function fetchUserSettings(): Promise<string> {
 	const supabase = createClient()
 	const {
@@ -490,7 +492,11 @@ export async function fetchUserSettings(): Promise<string> {
 
 	if (!user) return ''
 
-	const { data, error } = await supabase.from('user_settings').select('encrypted_api_key').eq('user_id', user.id).single()
+	const { data, error } = await supabase
+		.from('user_settings')
+		.select('encrypted_api_key')
+		.eq('user_id', user.id)
+		.single()
 
 	if (error) {
 		if (error.code === 'PGRST116') return '' // 尚無設定
@@ -500,7 +506,7 @@ export async function fetchUserSettings(): Promise<string> {
 	return data?.encrypted_api_key ?? ''
 }
 
-// 10. 儲存 API Key 設定
+// 儲存或更新使用者的 OpenAI API Key
 export async function saveUserSettings(apiKey: string): Promise<void> {
 	const supabase = createClient()
 	const {
@@ -523,7 +529,7 @@ export async function saveUserSettings(apiKey: string): Promise<void> {
 	if (error) throw error
 }
 
-// 11. 調用資料庫 pgvector 計算進行語意相似度比對
+// 利用 pgvector 進行餘弦相似度比對，排除當前操作的專案
 export async function matchSimilarProjects(
 	embedding: number[],
 	threshold: number,
@@ -549,13 +555,13 @@ export async function matchSimilarProjects(
 	const rows = (data || []) as Array<{ id: string; name: string; color: string; similarity: number }>
 
 	// 排除當前正在操作的專案
-	const filtered = rows.filter((p) => p.id !== projectId)
+	const filtered = rows.filter((row) => row.id !== projectId)
 	if (filtered.length === 0) return null
 
 	return filtered[0]
 }
 
-// 12. 刪除特定專案版本
+// 刪除指定的專案版本
 export async function deleteProjectVersion(versionId: string): Promise<void> {
 	const supabase = createClient()
 	const { error } = await supabase.from('project_versions').delete().eq('id', versionId)
@@ -563,20 +569,17 @@ export async function deleteProjectVersion(versionId: string): Promise<void> {
 	if (error) throw error
 }
 
-// 13. 批次更新多個專案版本的 Label 與 Sort Order
-export async function updateVersionsMeta(
-	updates: { id: string; label: string; sort_order: number }[]
-): Promise<void> {
+// 批次更新多個版本的 Label 與排序
+export async function updateVersionsMeta(updates: { id: string; label: string; sort_order: number }[]): Promise<void> {
 	const supabase = createClient()
 
 	await Promise.all(
-		updates.map(async (u) => {
+		updates.map(async (update) => {
 			const { error } = await supabase
 				.from('project_versions')
-				.update({ label: u.label, sort_order: u.sort_order })
-				.eq('id', u.id)
+				.update({ label: update.label, sort_order: update.sort_order })
+				.eq('id', update.id)
 			if (error) throw error
-		})
+		}),
 	)
 }
-

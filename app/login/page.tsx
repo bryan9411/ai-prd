@@ -41,18 +41,6 @@ export default function LoginPage() {
 	return (
 		<div className='flex min-h-screen items-center justify-center bg-background px-4'>
 			<div className='w-full max-w-sm'>
-				<div className='mb-8 flex flex-col items-center gap-3'>
-					<div className='flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/20'>
-						<Sparkles className='h-5.5 w-5.5 text-primary' />
-					</div>
-					<div className='text-center'>
-						<h1 className='text-xl font-bold tracking-tight text-foreground'>PRD 產生器</h1>
-						<p className='mt-1 text-sm text-muted-foreground'>
-							{mode === 'login' ? '登入帳號以繼續使用' : '建立帳號開始使用'}
-						</p>
-					</div>
-				</div>
-
 				<div className='rounded-xl border border-border bg-card p-6 shadow-sm'>
 					<h2 className='mb-5 text-center text-base font-semibold text-card-foreground'>
 						{mode === 'login' ? '會員登入' : '註冊新帳號'}

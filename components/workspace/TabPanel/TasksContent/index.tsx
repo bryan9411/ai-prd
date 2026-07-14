@@ -29,17 +29,17 @@ export const TasksContent = () => {
 	const updateTasks = useProjectStore((state) => state.updateTasks)
 
 	const handleToggle = (id: string) => {
-		const next = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+		const next = tasks.map((task) => (task.id === id ? { ...task, done: !task.done } : task))
 		updateTasks(next)
 	}
 
 	const handleUpdate = (id: string, label: string, priority: Priority) => {
-		const next = tasks.map((t) => (t.id === id ? { ...t, label, priority } : t))
+		const next = tasks.map((task) => (task.id === id ? { ...task, label, priority } : task))
 		updateTasks(next)
 	}
 
 	const handleDelete = (id: string) => {
-		updateTasks(tasks.filter((t) => t.id !== id))
+		updateTasks(tasks.filter((task) => task.id !== id))
 	}
 
 	const handleAdd = (label: string, priority: Priority) => {
@@ -50,7 +50,7 @@ export const TasksContent = () => {
 	}
 
 	const taskGroupsByPriority = PRIORITY_ORDER.map((priority) => {
-		const items = tasks.filter((t) => t.priority === priority)
+		const items = tasks.filter((task) => task.priority === priority)
 
 		return { priority, items }
 	})

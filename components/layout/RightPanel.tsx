@@ -14,7 +14,7 @@ export const RightPanel = () => {
 	const pinnedVersionId = useProjectStore((state) => state.pinnedVersionId)
 
 	const totalTasks = tasks.length
-	const completedTasks = tasks.filter((t) => t.done).length
+	const completedTasks = tasks.filter((task) => task.done).length
 	const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 	const lastUpdated = versions.length > 0 ? formatRelativeTime(versions[versions.length - 1].timestamp) : '—'
 

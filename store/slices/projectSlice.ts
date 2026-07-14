@@ -19,7 +19,7 @@ export const createProjectSlice: StateCreator<ProjectStore, [], [], ProjectSlice
 			const versions = data.versions
 			const pinnedId = data.pinnedVersionId ?? null
 			const activeVersion = pinnedId
-				? (versions.find((v) => v.id === pinnedId) ?? versions[versions.length - 1])
+				? (versions.find((version) => version.id === pinnedId) ?? versions[versions.length - 1])
 				: versions[versions.length - 1]
 
 			set({

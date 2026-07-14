@@ -58,7 +58,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			return set({ loading: false, validationError: preCheck.reason || '請輸入一個產品或商業構想' })
 		}
 
-		// 調用資料庫 pgvector 計算進行語意相似度比對 (Threshold 設為 0.92)
+		// 調用 pgvector 來比對有沒有語意大於 92% 的相似專案，有的話就跳提示
 		let mostSimilar: { id: string; name: string; color: string; similarity: number } | null = null
 		try {
 			mostSimilar = await matchSimilarProjects(preCheck.embedding, 0.92, 1, projectId)
@@ -99,7 +99,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 		if (!similarProject) return
 
 		const sourceData = await fetchProjectData(similarProject.meta.id)
-		const originVersion = sourceData?.versions.find((v) => v.isOrigin)
+		const originVersion = sourceData?.versions.find((version) => version.isOrigin)
 
 		if (!originVersion) {
 			return set({ similarProject: null })
@@ -111,7 +111,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			suggestions: originVersion.suggestions,
 		})
 
-		// 儲存新版本與更新專案屬性
+		// 儲存新版本與釘選，並將 embedding 向量存入 metadata
 		await saveNewVersion(projectId, newOriginVersion, versions.length)
 		await pinProjectVersion(projectId, newOriginVersion.id)
 		await updateProjectMeta(projectId, {
@@ -190,7 +190,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				}
 			: null
 
-		// 串流中的陣列項目尚未有正式 id，先用 index 產生暫時 id 當作 react key
+		// 串流中資料尚無 UUID，先以 index 當作暫時 key 供 React 渲染避免 error
 		const tasks: Task[] = (partial.tasks ?? []).map((task, index) => ({
 			id: `stream-${index}`,
 			label: task?.label ?? '',
@@ -251,8 +251,8 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				})),
 			}
 
-			const suggestions = output.suggestions.map((s) => ({
-				...s,
+			const suggestions = output.suggestions.map((suggestion) => ({
+				...suggestion,
 				id: uuidv4(),
 			}))
 
@@ -262,9 +262,8 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				suggestions,
 			})
 
-			// 寫入版本至資料庫，預設首個原始版本排序為 0
+			// 寫入 Supabase，並將此原始版本設為預設釘選版與同步 Embedding
 			await saveNewVersion(projectId, originVersion, 0)
-			// 更新專案 Pinned Version ID 與 Embedding 向量
 			await pinProjectVersion(projectId, originVersion.id)
 			await updateProjectMeta(projectId, {
 				embedding: pendingEmbedding ?? [],

@@ -17,13 +17,11 @@ export const useAuth = () => {
 	}, [supabase])
 
 	useEffect(() => {
-		// 取得初始使用者資訊
 		supabase.auth.getUser().then(({ data: { user } }) => {
 			setUser(user)
 			setIsLoading(false)
 		})
 
-		// 監聽身份驗證狀態變化
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange((_event, session) => {

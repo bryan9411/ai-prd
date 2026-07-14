@@ -67,7 +67,6 @@ export const IdeaInput = () => {
 		}
 	}
 
-	// 自動調整高度
 	useEffect(() => {
 		const el = textareaRef.current
 

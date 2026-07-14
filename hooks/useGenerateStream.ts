@@ -10,7 +10,7 @@ const parseErrorMessage = (error: Error): string => {
 		const parsed = JSON.parse(error.message) as { error?: string }
 		if (parsed?.error) return parsed.error
 	} catch {
-		// error.message 不是 JSON 格式，直接使用預設訊息
+		// 若非 JSON 格式就直接回傳預設錯誤
 	}
 	return '生成失敗，請確認 API Key 或稍後再試'
 }
@@ -29,7 +29,7 @@ export const useGenerateStream = () => {
 	const { submit, object } = useObject({
 		api: '/api/generate',
 		schema: aiGenerateOutputSchema,
-		// headers 的 resolver 會在請求當下才被呼叫，直接讀取 store 最新值即可，避免用 ref 同步
+		// headers 函數在發送請求時才會被調用，所以直接拿 Store 裡當前最新 API Key
 		headers: () => ({ Authorization: `Bearer ${useProjectStore.getState().pendingApiKey ?? ''}` }),
 		onFinish: ({ object: result, error }) => {
 			if (error || !result) {

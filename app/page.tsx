@@ -48,7 +48,7 @@ export default function Home() {
 	const handleDeleteProject = async (id: string) => {
 		try {
 			await deleteProject(id)
-			const next = projects.filter((p) => p.id !== id)
+			const next = projects.filter((project) => project.id !== id)
 
 			setProjects(next)
 

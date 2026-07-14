@@ -53,41 +53,39 @@ export const buildVersion = (
 ): ProjectVersion => {
 	const timestamp = Date.now()
 
-	// 建立 suggestionId 映射表並為 suggestions 生成新的 UUID
+	// 複製現有的 Suggestions 並生成新的 UUID，同時記錄新舊 ID 對照
 	const suggestionIdMap = new Map<string, string>()
-	const clonedSuggestions = aiData?.suggestions?.map((s, idx) => {
+	const clonedSuggestions = aiData?.suggestions?.map((suggestion, idx) => {
 		const newId = uuidv4()
 
-		if (s.id) {
-			suggestionIdMap.set(s.id, newId)
+		if (suggestion.id) {
+			suggestionIdMap.set(suggestion.id, newId)
 		}
 
 		suggestionIdMap.set(`ai_s_${idx}`, newId)
 		return {
-			...s,
+			...suggestion,
 			id: newId,
 		}
 	})
 
-	// 複製任務並指派新的 UUID
-	const clonedTasks = tasks.map((t) => {
-		let nextSuggestionId = t.suggestionId || undefined
+	const clonedTasks = tasks.map((task) => {
+		let nextSuggestionId = task.suggestionId || undefined
 		if (nextSuggestionId && suggestionIdMap.has(nextSuggestionId)) {
 			nextSuggestionId = suggestionIdMap.get(nextSuggestionId)
 		}
 		return {
-			...t,
+			...task,
 			id: uuidv4(),
 			suggestionId: nextSuggestionId,
 		}
 	})
 
-	// 複製工作流程與步驟，並指派新的 UUID
 	const clonedWorkflow: WorkflowData = {
 		roleAName: workflow.roleAName,
 		roleBName: workflow.roleBName,
-		steps: (workflow.steps || []).map((s) => ({
-			...s,
+		steps: (workflow.steps || []).map((step) => ({
+			...step,
 			id: uuidv4(),
 		})),
 	}
@@ -156,18 +154,15 @@ export const pushVersion = (versions: ProjectVersion[], newVersion: ProjectVersi
 	const trimmed =
 		nextEdits.length > MAX_EDIT_VERSIONS ? nextEdits.slice(nextEdits.length - MAX_EDIT_VERSIONS) : nextEdits
 
-	// 重新標籤：版本 2, 版本 3
-	const relabeled = trimmed.map((value, i) => {
-		return { ...value, label: `版本 ${i + 2}` }
+	// 重設 label 名稱為版本 2, 3
+	const relabeled = trimmed.map((version, i) => {
+		return { ...version, label: `版本 ${i + 2}` }
 	})
 
 	return origin ? [origin, ...relabeled] : relabeled
 }
 
-/**
- * 計算兩個向量的餘弦相似度，範圍 -1 ~ 1，越接近 1 表示越相似。
- * 用於比對兩個 embedding 向量的語意距離。
- */
+// 計算兩個向量的相似度（回傳 0 ~ 1，越接近 1 代表構想越相似）
 export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 	if (vecA.length !== vecB.length || vecA.length === 0) return 0
 

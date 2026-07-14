@@ -60,70 +60,74 @@ export const TaskItem = memo(({ task, onToggle, onUpdate, onDelete }: TaskItemPr
 		if (isEditing) inputRef.current?.focus()
 	}, [isEditing])
 
-	const renderEditMode = () => (
-		<div className='flex items-center gap-2 flex-1 min-w-0'>
-			<Input
-				ref={inputRef}
-				value={editLabel}
-				onChange={(e) => setEditLabel(e.target.value)}
-				onKeyDown={handleKeyDown}
-				className='h-8 text-sm flex-1'
-			/>
-			<Select value={editPriority} onValueChange={(value) => setEditPriority(value as Priority)}>
-				<SelectTrigger className='h-8 w-28 text-xs'>
-					<SelectValue />
-				</SelectTrigger>
-				<SelectContent>
-					{priorityOptions.map((p) => (
-						<SelectItem key={p} value={p} className='text-sm'>
-							{p}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-			<Button size='sm' onClick={handleConfirm} className='h-8 text-xs px-2.5'>
-				確認
-			</Button>
-			<Button size='sm' variant='outline' onClick={handleCancel} className='h-8 text-xs px-2.5'>
-				取消
-			</Button>
-		</div>
-	)
+	const renderEditMode = () => {
+		return (
+			<div className='flex items-center gap-2 flex-1 min-w-0'>
+				<Input
+					ref={inputRef}
+					value={editLabel}
+					onChange={(e) => setEditLabel(e.target.value)}
+					onKeyDown={handleKeyDown}
+					className='h-8 text-sm flex-1'
+				/>
+				<Select value={editPriority} onValueChange={(value) => setEditPriority(value as Priority)}>
+					<SelectTrigger className='h-8 w-28 text-xs'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{priorityOptions.map((priority) => (
+							<SelectItem key={priority} value={priority} className='text-sm'>
+								{priority}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<Button size='sm' onClick={handleConfirm} className='h-8 text-xs px-2.5'>
+					確認
+				</Button>
+				<Button size='sm' variant='outline' onClick={handleCancel} className='h-8 text-xs px-2.5'>
+					取消
+				</Button>
+			</div>
+		)
+	}
 
-	const renderViewMode = () => (
-		<>
-			<span
-				className={cx(
-					'text-sm flex-1 leading-snug transition-colors',
-					task.done ? 'line-through text-neutral-300 dark:text-neutral-600' : 'text-neutral-700 dark:text-neutral-200',
-				)}
-			>
-				{task.label}
-			</span>
-			<div className='flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'>
-				{!task.readonly && (
+	const renderViewMode = () => {
+		return (
+			<>
+				<span
+					className={cx(
+						'text-sm flex-1 leading-snug transition-colors',
+						task.done ? 'line-through text-neutral-300 dark:text-neutral-600' : 'text-neutral-700 dark:text-neutral-200',
+					)}
+				>
+					{task.label}
+				</span>
+				<div className='flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'>
+					{!task.readonly && (
+						<Button
+							size='icon'
+							variant='ghost'
+							title='編輯'
+							onClick={handleStartEdit}
+							className='w-6 h-6 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+						>
+							<Pencil className='w-3.5 h-3.5' />
+						</Button>
+					)}
 					<Button
 						size='icon'
 						variant='ghost'
-						title='編輯'
-						onClick={handleStartEdit}
-						className='w-6 h-6 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+						title='刪除'
+						onClick={() => onDelete(task.id)}
+						className='w-6 h-6 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40'
 					>
-						<Pencil className='w-3.5 h-3.5' />
+						<X className='w-3.5 h-3.5' />
 					</Button>
-				)}
-				<Button
-					size='icon'
-					variant='ghost'
-					title='刪除'
-					onClick={() => onDelete(task.id)}
-					className='w-6 h-6 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40'
-				>
-					<X className='w-3.5 h-3.5' />
-				</Button>
-			</div>
-		</>
-	)
+				</div>
+			</>
+		)
+	}
 
 	return (
 		<div
