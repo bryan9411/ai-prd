@@ -30,9 +30,14 @@ export const proxy = async (request: NextRequest) => {
 		return supabaseResponse
 	}
 
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const allCookies = request.cookies.getAll()
+
+	let user = null
+	if (allCookies && allCookies.length > 0) {
+		const userResult = await supabase.auth.getUser()
+
+		user = userResult.data?.user ?? null
+	}
 
 	// 未登入使用者：除了訪問 /login 外，訪問其他頁面一律重導向至 /login
 	if (!user && request.nextUrl.pathname !== '/login') {
