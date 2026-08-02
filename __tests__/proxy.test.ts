@@ -73,9 +73,11 @@ describe('proxy', () => {
 	})
 
 	it('已登入使用者訪問一般頁面應正常通過', async () => {
-		// 準備
+		// 準備：帶上模擬的 session cookie，代表使用者已登入
 		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } } })
-		const req = new NextRequest('http://localhost/')
+		const req = new NextRequest('http://localhost/', {
+			headers: { cookie: 'sb-access-token=test-token' },
+		})
 
 		// 操作
 		const res = await proxy(req)
@@ -85,9 +87,11 @@ describe('proxy', () => {
 	})
 
 	it('已登入使用者訪問 /login 應重導至 /', async () => {
-		// 準備
+		// 準備：帶上模擬的 session cookie，代表使用者已登入
 		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } } })
-		const req = new NextRequest('http://localhost/login')
+		const req = new NextRequest('http://localhost/login', {
+			headers: { cookie: 'sb-access-token=test-token' },
+		})
 
 		// 操作
 		const res = await proxy(req)
