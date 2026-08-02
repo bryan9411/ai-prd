@@ -36,4 +36,3 @@ export const useSettings = () => {
 
 	return { apiKey, saveApiKey, clearApiKey }
 }
-
