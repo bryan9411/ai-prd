@@ -182,6 +182,7 @@ export async function fetchProjectData(projectId: string): Promise<ProjectData |
 		const suggestions: AISuggestion[] = (dbSuggestions || [])
 			.filter((suggestion) => suggestion.version_id === version.id)
 			.map((suggestion) => ({
+				id: suggestion.id,
 				category: suggestion.category,
 				title: suggestion.title,
 				description: suggestion.description,
