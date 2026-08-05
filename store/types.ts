@@ -19,6 +19,7 @@ export interface AISlice {
 	// 串流生成期間暫存的資料
 	pendingIdea: string | null
 	pendingEmbedding: number[] | null
+	targetProjectId: string | null
 	generate: () => Promise<void>
 	clearGenerateError: () => void
 	clearValidationError: () => void
@@ -76,4 +77,5 @@ export const emptyState = {
 	similarProject: null as { meta: ProjectMeta; similarity: number; currentEmbedding: number[] } | null,
 	pendingIdea: null as string | null,
 	pendingEmbedding: null as number[] | null,
+	targetProjectId: null as string | null,
 }

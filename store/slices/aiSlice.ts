@@ -23,6 +23,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	similarProject: null,
 	pendingIdea: null,
 	pendingEmbedding: null,
+	targetProjectId: null,
 
 	generate: async () => {
 		const { idea, loading, submitted, projectId } = get()
@@ -72,6 +73,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 		set({
 			pendingIdea: idea,
 			pendingEmbedding: preCheck.embedding,
+			targetProjectId: projectId,
 			isStreaming: true,
 		})
 	},
@@ -126,8 +128,9 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	},
 
 	forceGenerate: async () => {
-		const { idea, similarProject } = get()
 		const settings = await fetchUserSettings()
+
+		const { idea, similarProject, projectId } = get()
 
 		if (!settings.hasApiKey || !similarProject) return
 
@@ -137,6 +140,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			generateError: null,
 			pendingIdea: idea,
 			pendingEmbedding: similarProject.currentEmbedding,
+			targetProjectId: projectId,
 			isStreaming: true,
 		})
 	},
@@ -146,6 +150,10 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	},
 
 	applyStreamingPartial: (partial: PartialAIGenerateOutput) => {
+		const { targetProjectId, projectId } = get()
+
+		if (targetProjectId && targetProjectId !== projectId) return
+		
 		const prd: PRDContent | null = partial.prd
 			? {
 					tagline: partial.prd.tagline ?? '',
@@ -218,7 +226,9 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	},
 
 	finalizeGenerate: async (output: AIGenerateOutput) => {
-		const { pendingIdea, idea, projectId, pendingEmbedding } = get()
+		const { pendingIdea, idea, projectId, targetProjectId, pendingEmbedding } = get()
+
+		const effectiveProjectId = targetProjectId ?? projectId
 		const effectiveIdea = pendingIdea ?? idea
 
 		try {
@@ -251,24 +261,26 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			})
 
 			// 寫入 Supabase，並將此原始版本設為預設釘選版與同步 Embedding
-			await saveNewVersion(projectId, originVersion, 0)
-			await pinProjectVersion(projectId, originVersion.id)
-			await updateProjectMeta(projectId, {
+			await saveNewVersion(effectiveProjectId, originVersion, 0)
+			await pinProjectVersion(effectiveProjectId, originVersion.id)
+			await updateProjectMeta(effectiveProjectId, {
 				embedding: pendingEmbedding ?? [],
 			})
 
-			set({
-				tasks,
-				workflow,
-				prd: output.prd,
-				phases: output.phases,
-				suggestions,
-				submitted: true,
-				isDirty: false,
-				versions: [originVersion],
-				activeVersionId: originVersion.id,
-				pinnedVersionId: originVersion.id,
-			})
+			if (projectId === effectiveProjectId) {
+				set({
+					tasks,
+					workflow,
+					prd: output.prd,
+					phases: output.phases,
+					suggestions,
+					submitted: true,
+					isDirty: false,
+					versions: [originVersion],
+					activeVersionId: originVersion.id,
+					pinnedVersionId: originVersion.id,
+				})
+			}
 		} catch (err) {
 			const errorMessage = axios.isAxiosError(err)
 				? (err.response?.data?.error ?? 'AI 生成失敗，請稍後再試')
@@ -280,6 +292,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				isStreaming: false,
 				pendingIdea: null,
 				pendingEmbedding: null,
+				targetProjectId: null,
 			})
 		}
 	},
@@ -291,6 +304,7 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			isStreaming: false,
 			pendingIdea: null,
 			pendingEmbedding: null,
+			targetProjectId: null,
 		})
 	},
 })
