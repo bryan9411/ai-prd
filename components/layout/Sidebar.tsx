@@ -35,7 +35,7 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 	const [newName, setNewName] = useState('')
 
 	const { confirm, ConfirmModal } = useConfirm()
-	const { apiKey, saveApiKey, clearApiKey } = useSettings()
+	const { hasApiKey, maskedApiKey, saveApiKey, clearApiKey } = useSettings()
 
 	const navItems: NavItem[] = [
 		{ icon: LayoutDashboard, label: '總覽' },
@@ -211,7 +211,8 @@ export const Sidebar = ({ projects, activeProject, onProjectChange, onAddProject
 			<ConfirmModal />
 			<SettingsDialog
 				open={isSettingsOpen}
-				apiKey={apiKey}
+				hasApiKey={hasApiKey}
+				maskedApiKey={maskedApiKey}
 				onClose={() => setIsSettingsOpen(false)}
 				onSave={saveApiKey}
 				onClear={clearApiKey}

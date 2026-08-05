@@ -16,24 +16,31 @@ import { Input } from '@/components/ui/input'
 
 interface SettingsDialogProps {
 	open: boolean
-	apiKey: string
+	hasApiKey: boolean
+	maskedApiKey: string
 	onClose: () => void
 	onSave: (key: string) => void
 	onClear: () => void
 }
 
-export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: SettingsDialogProps) => {
-	const [inputValue, setInputValue] = useState(apiKey)
+export const SettingsDialog = ({ open, hasApiKey, maskedApiKey, onClose, onSave, onClear }: SettingsDialogProps) => {
+	const [inputValue, setInputValue] = useState('')
 	const [isVisible, setIsVisible] = useState(false)
 
 	useEffect(() => {
-		setInputValue(apiKey)
-	}, [apiKey])
-
-	const hasKey = apiKey.length > 0
+		if (open) {
+			setInputValue(hasApiKey ? maskedApiKey : '')
+			setIsVisible(false)
+		}
+	}, [open, hasApiKey, maskedApiKey])
 
 	const handleSave = () => {
-		onSave(inputValue.trim())
+		const trimmed = inputValue.trim()
+
+		if (trimmed && trimmed !== maskedApiKey) {
+			onSave(trimmed)
+		}
+
 		onClose()
 	}
 
@@ -54,6 +61,7 @@ export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: Setti
 
 	const renderInput = () => {
 		const VisibilityIcon = isVisible ? EyeOff : Eye
+		const placeholder = hasApiKey ? maskedApiKey : '請輸入 OpenAI API key'
 
 		return (
 			<div className='relative'>
@@ -62,7 +70,7 @@ export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: Setti
 					value={inputValue}
 					onChange={(e) => setInputValue(e.target.value)}
 					onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-					placeholder='請輸入 openai API key'
+					placeholder={placeholder}
 					className='pr-9 font-mono text-sm'
 				/>
 				<Button
@@ -79,7 +87,7 @@ export const SettingsDialog = ({ open, apiKey, onClose, onSave, onClear }: Setti
 	}
 
 	const renderFooter = () => {
-		if (hasKey) {
+		if (hasApiKey) {
 			return (
 				<AlertDialogFooter>
 					<Button

@@ -1,19 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@/lib/supabase/server'
+import { decrypt } from '@/lib/crypto'
 
 export async function POST(req: NextRequest) {
-	const authHeader = req.headers.get('Authorization')
-	if (!authHeader?.startsWith('Bearer ')) {
-		return NextResponse.json({ error: '請先至設定中輸入 OpenAI API Key' }, { status: 401 })
+	let apiKey = ''
+
+	try {
+		const supabase = await createClient()
+		const { data: { user } } = await supabase.auth.getUser()
+
+		if (user) {
+			const { data } = await supabase
+				.from('user_settings')
+				.select('encrypted_api_key')
+				.eq('user_id', user.id)
+				.single()
+
+			if (data?.encrypted_api_key) {
+				try {
+					apiKey = decrypt(data.encrypted_api_key)
+				} catch (error) {
+					console.error('API Key 解密失敗', error)
+				}
+			}
+		}
+	} catch (error) {
+		console.error('取得使用者設定失敗', error)
 	}
 
-	const apiKey = authHeader.slice(7).trim()
 	if (!apiKey) {
 		return NextResponse.json({ error: '請先至設定中輸入 OpenAI API Key' }, { status: 401 })
 	}
 
 	let body: { idea?: string } | null = null
-
 	try {
 		body = await req.json()
 	} catch {

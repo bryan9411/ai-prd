@@ -9,6 +9,27 @@ jest.mock('openai', () => ({
 	default: jest.fn(),
 }))
 
+const mockGetUser = jest.fn()
+const mockSingle = jest.fn()
+
+// Mock Supabase Server Client
+jest.mock('@/lib/supabase/server', () => ({
+	createClient: jest.fn(() => ({
+		auth: { getUser: mockGetUser },
+		from: jest.fn(() => ({
+			select: jest.fn(() => ({
+				eq: jest.fn(() => ({
+					single: mockSingle,
+				})),
+			})),
+		})),
+	})),
+}))
+
+jest.mock('@/lib/crypto', () => ({
+	decrypt: jest.fn((val: string) => val),
+}))
+
 import OpenAI from 'openai'
 import { POST } from '@/app/api/pre-check/route'
 
@@ -17,13 +38,11 @@ const mockEmbeddingsCreate = jest.fn()
 
 // 輔助函式：建立測試用 NextRequest
 const buildRequest = (options: {
-	headers?: Record<string, string>
 	body?: unknown
 	invalidJson?: boolean
 }) => {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
-		...(options.headers || {}),
 	}
 	const init: RequestInit = { method: 'POST', headers }
 
@@ -39,6 +58,10 @@ const buildRequest = (options: {
 describe('POST /api/pre-check', () => {
 	beforeEach(() => {
 		jest.clearAllMocks()
+		// 預設模擬有登入且有 API Key
+		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+		mockSingle.mockResolvedValue({ data: { encrypted_api_key: 'sk-test-key' }, error: null })
+
 		// 每次測試前設定 OpenAI mock constructor
 		;(OpenAI as unknown as jest.Mock).mockImplementation(() => ({
 			chat: { completions: { create: mockChatCreate } },
@@ -46,26 +69,19 @@ describe('POST /api/pre-check', () => {
 		}))
 	})
 
-	it('Authorization header 缺失或 token 為空時應回傳 401', async () => {
-		// 情境 1：完全沒有 Authorization header
-		const res1 = await POST(buildRequest({ body: { idea: '開一間咖啡店' } }))
-		expect(res1.status).toBe(401)
+	it('未登入或尚未設定 API Key 時應回傳 401', async () => {
+		mockGetUser.mockResolvedValue({ data: { user: null } })
 
-		// 情境 2：Bearer 後面只有空白
-		const res2 = await POST(
-			buildRequest({
-				headers: { Authorization: 'Bearer    ' },
-				body: { idea: '開一間咖啡店' },
-			}),
-		)
-		expect(res2.status).toBe(401)
+		const res = await POST(buildRequest({ body: { idea: '開一間咖啡店' } }))
+		expect(res.status).toBe(401)
+		const data = await res.json()
+		expect(data.error).toBe('請先至設定中輸入 OpenAI API Key')
 	})
 
 	it('request body 不是合法 JSON 時應回傳 400', async () => {
 		// 操作
 		const res = await POST(
 			buildRequest({
-				headers: { Authorization: 'Bearer sk-test-key' },
 				invalidJson: true,
 			}),
 		)
@@ -80,7 +96,6 @@ describe('POST /api/pre-check', () => {
 		// 操作
 		const res = await POST(
 			buildRequest({
-				headers: { Authorization: 'Bearer sk-test-key' },
 				body: { idea: '   ' },
 			}),
 		)
@@ -103,8 +118,7 @@ describe('POST /api/pre-check', () => {
 		// 操作
 		const res = await POST(
 			buildRequest({
-				headers: { Authorization: 'Bearer sk-test-key' },
-				body: { idea: '開一間咖啡店' },
+				body: { idea: '一個好點子' },
 			}),
 		)
 
@@ -118,28 +132,37 @@ describe('POST /api/pre-check', () => {
 		})
 	})
 
-	it.each([
-		{ status: 401, expected: 'API Key 無效，請確認金鑰是否正確' },
-		{ status: 429, expected: '請求過於頻繁或超過配額，請稍後再試' },
-	])('OpenAI 回傳 $status 時應回傳對應錯誤訊息', async ({ status, expected }) => {
-		// 準備：模擬 OpenAI 拋出錯誤
-		mockChatCreate.mockRejectedValue({
-			status,
-			message: 'OpenAI error',
-			error: { message: 'details' },
-		})
+	it('OpenAI 回傳 401 時應回傳對應錯誤訊息', async () => {
+		// 準備
+		mockChatCreate.mockRejectedValue({ status: 401, message: 'Invalid API Key' })
 
 		// 操作
 		const res = await POST(
 			buildRequest({
-				headers: { Authorization: 'Bearer sk-test-key' },
-				body: { idea: '開一間咖啡店' },
+				body: { idea: '一個點子' },
 			}),
 		)
 
 		// 驗證
-		expect(res.status).toBe(status)
+		expect(res.status).toBe(401)
 		const data = await res.json()
-		expect(data.error).toBe(expected)
+		expect(data.error).toBe('API Key 無效，請確認金鑰是否正確')
+	})
+
+	it('OpenAI 回傳 429 時應回傳對應錯誤訊息', async () => {
+		// 準備
+		mockChatCreate.mockRejectedValue({ status: 429, message: 'Rate limit exceeded' })
+
+		// 操作
+		const res = await POST(
+			buildRequest({
+				body: { idea: '一個點子' },
+			}),
+		)
+
+		// 驗證
+		expect(res.status).toBe(429)
+		const data = await res.json()
+		expect(data.error).toBe('請求過於頻繁或超過配額，請稍後再試')
 	})
 })

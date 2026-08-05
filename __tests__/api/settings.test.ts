@@ -51,7 +51,7 @@ describe('GET /api/settings', () => {
 		})
 	})
 
-	it('未登入使用者應回傳空字串 apiKey', async () => {
+	it('未登入使用者應回傳空字串 apiKey 與 hasApiKey: false', async () => {
 		// 準備
 		mockGetUser.mockResolvedValue({ data: { user: null } })
 
@@ -61,11 +61,11 @@ describe('GET /api/settings', () => {
 		// 驗證
 		expect(res.status).toBe(200)
 		const data = await res.json()
-		expect(data).toEqual({ apiKey: '' })
+		expect(data).toEqual({ hasApiKey: false, maskedApiKey: '' })
 		expect(mockFrom).not.toHaveBeenCalled()
 	})
 
-	it('尚無設定資料（PGRST116）時應回傳空字串 apiKey', async () => {
+	it('尚無設定資料（PGRST116）時應回傳空字串 apiKey 與 hasApiKey: false', async () => {
 		// 準備
 		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
 		mockSingle.mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
@@ -76,7 +76,7 @@ describe('GET /api/settings', () => {
 		// 驗證
 		expect(res.status).toBe(200)
 		const data = await res.json()
-		expect(data).toEqual({ apiKey: '' })
+		expect(data).toEqual({ hasApiKey: false, maskedApiKey: '' })
 		expect(mockDecrypt).not.toHaveBeenCalled()
 	})
 
@@ -94,7 +94,7 @@ describe('GET /api/settings', () => {
 		expect(data.error).toBe('載入設定失敗')
 	})
 
-	it('有設定資料時應解密後回傳明文 apiKey', async () => {
+	it('有設定資料時應解密後回傳遮罩 apiKey 與 hasApiKey: true', async () => {
 		// 準備
 		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
 		mockSingle.mockResolvedValue({ data: { encrypted_api_key: 'iv:tag:cipher' }, error: null })
@@ -107,10 +107,10 @@ describe('GET /api/settings', () => {
 		expect(mockDecrypt).toHaveBeenCalledWith('iv:tag:cipher')
 		expect(res.status).toBe(200)
 		const data = await res.json()
-		expect(data).toEqual({ apiKey: 'sk-plain-key' })
+		expect(data).toEqual({ hasApiKey: true, maskedApiKey: 'sk-••••••••-key' })
 	})
 
-	it('密文毀損導致解密失敗時應回傳 500', async () => {
+	it('密文毀損導致解密失敗時應視為未設定 Key 並回傳 hasApiKey: false', async () => {
 		// 準備
 		mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
 		mockSingle.mockResolvedValue({ data: { encrypted_api_key: 'corrupted-cipher' }, error: null })
@@ -122,9 +122,9 @@ describe('GET /api/settings', () => {
 		const res = await GET()
 
 		// 驗證
-		expect(res.status).toBe(500)
+		expect(res.status).toBe(200)
 		const data = await res.json()
-		expect(data.error).toBe('解密設定失敗，請重新設定 API Key')
+		expect(data).toEqual({ hasApiKey: false, maskedApiKey: '' })
 	})
 })
 

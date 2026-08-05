@@ -4,35 +4,43 @@ import { useState, useCallback, useEffect } from 'react'
 import { fetchUserSettings, saveUserSettings } from '@/lib/supabase/db'
 
 export const useSettings = () => {
-	const [apiKey, setApiKey] = useState('')
+	const [hasApiKey, setHasApiKey] = useState(false)
+	const [maskedApiKey, setMaskedApiKey] = useState('')
+
+	const loadSettings = useCallback(async () => {
+		try {
+			const data = await fetchUserSettings()
+
+			setHasApiKey(data.hasApiKey)
+			setMaskedApiKey(data.maskedApiKey)
+		} catch (err) {
+			setHasApiKey(false)
+			console.error('載入設定失敗：', err)
+		}
+	}, [])
 
 	useEffect(() => {
-		fetchUserSettings()
-			.then((key) => {
-				setApiKey(key)
-			})
-			.catch((err) => {
-				console.error('載入設定失敗：', err)
-			})
-	}, [])
+		loadSettings()
+	}, [loadSettings])
 
 	const saveApiKey = useCallback(async (key: string) => {
 		try {
 			await saveUserSettings(key)
-			setApiKey(key)
+			await loadSettings()
 		} catch (err) {
 			console.error('儲存設定失敗：', err)
 		}
-	}, [])
+	},[loadSettings])
 
 	const clearApiKey = useCallback(async () => {
 		try {
 			await saveUserSettings('')
-			setApiKey('')
+			setHasApiKey(false)
+			setMaskedApiKey('')
 		} catch (err) {
 			console.error('清除設定失敗：', err)
 		}
 	}, [])
 
-	return { apiKey, saveApiKey, clearApiKey }
+	return { hasApiKey, maskedApiKey, saveApiKey, clearApiKey }
 }

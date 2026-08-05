@@ -12,6 +12,11 @@ import type {
 	DataModel,
 } from '@/lib/ai-schema'
 
+export interface UserSettingsResponse {
+	hasApiKey: boolean
+	maskedApiKey: string
+}
+
 // 取得目前使用者的所有專案列表
 export async function fetchProjects(): Promise<ProjectMeta[]> {
 	const supabase = createClient()
@@ -470,12 +475,16 @@ export async function pinProjectVersion(projectId: string, versionId: string): P
 	if (error) throw error
 }
 
-export const fetchUserSettings = async (): Promise<string> => {
+export const fetchUserSettings = async (): Promise<UserSettingsResponse> => {
 	const res = await fetch('/api/settings')
 	if (!res.ok) throw new Error('載入設定失敗')
 
-	const { apiKey } = (await res.json()) as { apiKey?: string }
-	return apiKey ?? ''
+	const data = await res.json()
+
+	return {
+		hasApiKey: data.hasApiKey ?? false,
+		maskedApiKey: data.maskedApiKey ?? '',
+	}
 }
 
 export const saveUserSettings = async (apiKey: string): Promise<void> => {

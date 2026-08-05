@@ -29,8 +29,6 @@ export const useGenerateStream = () => {
 	const { submit, object } = useObject({
 		api: '/api/generate',
 		schema: aiGenerateOutputSchema,
-		// headers 函數在發送請求時才會被調用，所以直接拿 Store 裡當前最新 API Key
-		headers: () => ({ Authorization: `Bearer ${useProjectStore.getState().pendingApiKey ?? ''}` }),
 		onFinish: ({ object: result, error }) => {
 			if (error || !result) {
 				handleStreamError('生成結果格式錯誤，請稍後再試')

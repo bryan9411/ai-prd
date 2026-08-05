@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, decrypt } from '@/lib/crypto'
 
+const getMaskedApiKey = (key: string): string => {
+	if (!key) return ''
+	if (key.length <= 8) return '••••••••'
+
+	return `${key.slice(0, 3)}••••••••${key.slice(-4)}`
+}
+
 export const GET = async () => {
 	const supabase = await createClient()
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) return NextResponse.json({ apiKey: '' })
+	if (!user) {
+		return NextResponse.json({ hasApiKey: false, maskedApiKey: '' })
+	}
 
 	const { data, error } = await supabase
 		.from('user_settings')
@@ -17,26 +24,32 @@ export const GET = async () => {
 		.single()
 
 	if (error) {
-		if (error.code === 'PGRST116') return NextResponse.json({ apiKey: '' }) // 尚無設定
+		if (error.code === 'PGRST116') {
+			return NextResponse.json({ hasApiKey: false, maskedApiKey: '' })
+		}
+
 		return NextResponse.json({ error: '載入設定失敗' }, { status: 500 })
 	}
 
 	try {
 		const apiKey = data?.encrypted_api_key ? decrypt(data.encrypted_api_key) : ''
-		return NextResponse.json({ apiKey })
+
+		return NextResponse.json({
+			hasApiKey: !!apiKey,
+			maskedApiKey: getMaskedApiKey(apiKey),
+		})
 	} catch {
-		// 密文毀損或 ENCRYPTION_KEY 已變更導致無法解密
-		return NextResponse.json({ error: '解密設定失敗，請重新設定 API Key' }, { status: 500 })
+		return NextResponse.json({ hasApiKey: false, maskedApiKey: '' })
 	}
 }
 
 export const POST = async (req: NextRequest) => {
 	const supabase = await createClient()
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) return NextResponse.json({ error: '未登入使用者' }, { status: 401 })
+	if (!user) {
+		return NextResponse.json({ error: '未登入使用者' }, { status: 401 })
+	}
 
 	let body: { apiKey?: string } | null = null
 	try {
@@ -57,7 +70,9 @@ export const POST = async (req: NextRequest) => {
 		{ onConflict: 'user_id' },
 	)
 
-	if (error) return NextResponse.json({ error: '儲存設定失敗' }, { status: 500 })
+	if (error) {
+		return NextResponse.json({ error: '儲存設定失敗' }, { status: 500 })
+	}
 
 	return NextResponse.json({ success: true })
 }

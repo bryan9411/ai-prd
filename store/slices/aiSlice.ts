@@ -22,7 +22,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 	validationError: null,
 	similarProject: null,
 	pendingIdea: null,
-	pendingApiKey: null,
 	pendingEmbedding: null,
 
 	generate: async () => {
@@ -30,27 +29,20 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 
 		if (!idea.trim() || loading || submitted) return
 
-		const apiKey = await fetchUserSettings()
+		const settings = await fetchUserSettings()
 
-		if (!apiKey?.trim()) {
-			set({ generateError: '請先至設定中輸入 OpenAI API Key' })
-			return
+		if (!settings.hasApiKey) {
+			return set({ generateError: '請先至設定中輸入 OpenAI API Key' })
 		}
 
 		set({ loading: true, generateError: null, validationError: null, similarProject: null })
 
 		let preCheck: { valid: boolean; reason: string; embedding: number[] }
 		try {
-			const { data } = await axios.post<{ valid: boolean; reason: string; embedding: number[] }>(
-				'/api/pre-check',
-				{ idea },
-				{ headers: { Authorization: `Bearer ${apiKey}` } },
-			)
+			const { data } = await axios.post('/api/pre-check', { idea })
 			preCheck = data
 		} catch (err) {
-			const errorMessage = axios.isAxiosError(err)
-				? (err.response?.data?.error ?? '失敗，請稍後再試')
-				: '網路錯誤，請稍後再試'
+			const errorMessage = axios.isAxiosError(err) ? (err.response?.data?.error ?? '失敗，請稍後再試') : '網路錯誤，請稍後再試'
 			return set({ loading: false, generateError: errorMessage })
 		}
 
@@ -58,7 +50,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			return set({ loading: false, validationError: preCheck.reason || '請輸入一個產品或商業構想' })
 		}
 
-		// 調用 pgvector 來比對有沒有語意大於 92% 的相似專案，有的話就跳提示
 		let mostSimilar: { id: string; name: string; color: string; similarity: number } | null = null
 		try {
 			mostSimilar = await matchSimilarProjects(preCheck.embedding, 0.92, 1, projectId)
@@ -80,7 +71,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 
 		set({
 			pendingIdea: idea,
-			pendingApiKey: apiKey,
 			pendingEmbedding: preCheck.embedding,
 			isStreaming: true,
 		})
@@ -137,16 +127,15 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 
 	forceGenerate: async () => {
 		const { idea, similarProject } = get()
-		const apiKey = await fetchUserSettings()
+		const settings = await fetchUserSettings()
 
-		if (!apiKey?.trim() || !similarProject) return
+		if (!settings.hasApiKey || !similarProject) return
 
 		set({
 			loading: true,
 			similarProject: null,
 			generateError: null,
 			pendingIdea: idea,
-			pendingApiKey: apiKey,
 			pendingEmbedding: similarProject.currentEmbedding,
 			isStreaming: true,
 		})
@@ -190,7 +179,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				}
 			: null
 
-		// 串流中資料尚無 UUID，先以 index 當作暫時 key 供 React 渲染避免 error
 		const tasks: Task[] = (partial.tasks ?? []).map((task, index) => ({
 			id: `stream-${index}`,
 			label: task?.label ?? '',
@@ -291,7 +279,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 				loading: false,
 				isStreaming: false,
 				pendingIdea: null,
-				pendingApiKey: null,
 				pendingEmbedding: null,
 			})
 		}
@@ -303,7 +290,6 @@ export const createAISlice: StateCreator<ProjectStore, [], [], AISlice> = (set, 
 			loading: false,
 			isStreaming: false,
 			pendingIdea: null,
-			pendingApiKey: null,
 			pendingEmbedding: null,
 		})
 	},
